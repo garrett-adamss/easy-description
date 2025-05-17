@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { User } from "lucide-react"
+// import { User } from "lucide-react"
 import md5 from 'md5'
 
 
@@ -29,16 +29,16 @@ export default async function AccountPage() {
 
 
   // Format date strings for better readability
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString()
   }
 
   // Helper to check if an object has properties
-  const hasProperties = (obj) => obj && Object.keys(obj).length > 0
+  const hasProperties = (obj: object) => obj && Object.keys(obj).length > 0
 
-  const email = user.email?.trim().toLowerCase()
-  const hash = md5(email)
-  const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=identicon`
+  const email = user.email?.trim().toLowerCase() ?? '';
+  const hash = md5(email);
+  const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=identicon`;
 
   return (
     <div className="container mx-auto py-10 px-4">
@@ -148,8 +148,8 @@ export default async function AccountPage() {
                     </pre>
                   </div>
                 )}
-
-                {hasProperties(user.identities) && (
+                
+                {user.identities !== undefined && hasProperties(user.identities) && (
                   <div>
                     <h3 className="text-lg font-medium">Identities</h3>
                     <Separator className="my-2" />
@@ -159,9 +159,7 @@ export default async function AccountPage() {
                   </div>
                 )}
 
-
-
-                {hasProperties(userMetadata) && (
+                {userMetadata !== null && hasProperties(userMetadata) && (
                   <div>
                     <h3 className="text-lg font-medium">Subscription Info Json</h3>
                     <Separator className="my-2" />
@@ -170,7 +168,6 @@ export default async function AccountPage() {
                     </pre>
                   </div>
                 )}
-
 
                 {hasProperties(user) && (
                   <div>

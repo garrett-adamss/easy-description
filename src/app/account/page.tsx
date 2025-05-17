@@ -148,7 +148,7 @@ export default async function AccountPage() {
                   </div>
                 )}
 
-                {hasProperties(user.identities) && (
+                {user.identities !== undefined && hasProperties(user.identities) && (
                   <div>
                     <h3 className="text-lg font-medium">Identities</h3>
                     <Separator className="my-2" />
