@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Package, LogIn, LogOut } from "lucide-react"
+import { Package, LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -80,7 +80,6 @@ export default function Navbar() {
             ) : (
               <Button
                 variant="default"
-                size="sm"
                 onClick={() => router.push("/auth/login")}
                 className="flex items-center gap-1"
               >

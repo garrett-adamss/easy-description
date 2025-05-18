@@ -3,7 +3,7 @@
 // price_1ROsSwBSFWoGr8GMm6DnBShN
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useUser } from "@supabase/auth-helpers-react"
 import { Check, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -59,11 +59,12 @@ const PRICES = [
 export default function PricingPage() {
   const user = useUser()
   const router = useRouter()
+  const pathname = usePathname()
 
   const handleSubscribe = async (priceId: string) => {
     console.log(priceId)
     if (!user) {
-      router.push("/auth/login")
+      router.push(`/auth/login?redirectedFrom=${encodeURIComponent(pathname)}`)
       return
     }
 
@@ -101,6 +102,7 @@ export default function PricingPage() {
               e.currentTarget.style.setProperty("--x", `${x}px`)
               e.currentTarget.style.setProperty("--y", `${y}px`)
             }}
+            onClick={() => handleSubscribe(plan.id)}
           >
             <div
               className="absolute pointer-events-none inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -120,7 +122,7 @@ export default function PricingPage() {
                 <span className="ml-1 text-muted-foreground">/{plan.period}</span>
               </div>
             </CardHeader>
-            <CardContent className="flex-grow" onClick={() => handleSubscribe(plan.id)}>
+            <CardContent className="flex-grow">
               <ul className="space-y-3">
                 {plan.features.map((feature, i) => (
                   <li key={i} className="flex items-center">

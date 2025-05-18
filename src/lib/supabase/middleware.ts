@@ -41,25 +41,22 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
-  // console.log("pathname", pathname)
+  const url = request.nextUrl.clone()
 
   // Helper: check if path matches any route (supports partial matches)
   const matches = (routes: string[]) =>
     routes.some((route) => pathname === route || pathname.startsWith(route + '/'))
 
-  // Auth-only protection
+  // 🔒 Auth-only protection routes
   if (matches(authOnlyRoutes) && !user) {
-    const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
-    url.searchParams.set('redirectedFrom', request.nextUrl.pathname)
-    console.log("url", url)
+    url.searchParams.set('redirectedFrom', pathname)
     return NextResponse.redirect(url)
   }
 
-  // Auth + Subscription protection
+  // 🔒 Auth + Subscription protection routes
   if (matches(authAndSubscriptionRoutes)) {
     if (!user) {
-      const url = request.nextUrl.clone()
       url.pathname = '/auth/login'
       url.searchParams.set('redirectedFrom', pathname)
       return NextResponse.redirect(url)
@@ -72,7 +69,7 @@ export async function updateSession(request: NextRequest) {
       .single()
 
     if (error || !appUser?.is_subscription_active) {
-      const url = request.nextUrl.clone()
+      // const url = request.nextUrl.clone()
       url.pathname = '/pricing'
       return NextResponse.redirect(url)
     }
