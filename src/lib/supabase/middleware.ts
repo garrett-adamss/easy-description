@@ -1,6 +1,9 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const authOnlyRoutes = ['/account']
+const authAndSubscriptionRoutes = ['/dashboard', '/dashboard/settings', '/dashboard/billing']
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -37,15 +40,53 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // ✅ ONLY protect the /dashboard/** routes
-  if (
-    !user &&
-    request.nextUrl.pathname.startsWith('/dashboard')
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/auth/login';
-    return NextResponse.redirect(url);
+  const pathname = request.nextUrl.pathname
+  // console.log("pathname", pathname)
+
+  // Helper: check if path matches any route (supports partial matches)
+  const matches = (routes: string[]) =>
+    routes.some((route) => pathname === route || pathname.startsWith(route + '/'))
+
+  // Auth-only protection
+  if (matches(authOnlyRoutes) && !user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/login'
+    url.searchParams.set('redirectedFrom', request.nextUrl.pathname)
+    console.log("url", url)
+    return NextResponse.redirect(url)
   }
+
+  // Auth + Subscription protection
+  if (matches(authAndSubscriptionRoutes)) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/login'
+      url.searchParams.set('redirectedFrom', pathname)
+      return NextResponse.redirect(url)
+    }
+
+    const { data: appUser, error } = await supabase
+      .from('users')
+      .select('is_subscription_active')
+      .eq('auth_user_id', user.id)
+      .single()
+
+    if (error || !appUser?.is_subscription_active) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/pricing'
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // ✅ ONLY protect the /dashboard/** routes
+  // if (
+  //   !user &&
+  //   request.nextUrl.pathname.startsWith('/dashboard')
+  // ) {
+  //   const url = request.nextUrl.clone();
+  //   url.pathname = '/auth/login';
+  //   return NextResponse.redirect(url);
+  // }
 
   // Protect all routes
   // if (

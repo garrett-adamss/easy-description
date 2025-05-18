@@ -18,6 +18,7 @@ import {
   IconSettings,
   IconUsers,
 } from "@tabler/icons-react"
+import { User } from "@supabase/supabase-js"
 
 import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
@@ -33,12 +34,14 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  user: User & {
+    avatar: string
+    [key: string]: string
+  }
+}
+
+const navData = {
   navMain: [
     {
       title: "Dashboard",
@@ -150,7 +153,7 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -169,12 +172,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={navData.navMain} />
+        <NavDocuments items={navData.documents} />
+        <NavSecondary items={navData.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={{
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+          email: user.email || '',
+          avatar: user.avatar,
+        }} />
       </SidebarFooter>
     </Sidebar>
   )

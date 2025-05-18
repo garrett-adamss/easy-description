@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation"
 import { LogoutButton } from "@/components/logout-button"
 import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,7 +11,7 @@ export default async function AccountPage() {
   const { data, error } = await supabase.auth.getUser()
 
   if (error || !data?.user) {
-    redirect("/auth/login")
+    throw error || new Error('User not found')
   }
 
   const user = data.user

@@ -81,7 +81,8 @@ export default function PricingPage() {
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold tracking-tight mb-3">Simple, Transparent Pricing</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Choose the perfect plan for your needs. All plans include a 14-day free trial.
+          Choose the perfect plan for your needs. 
+          {/* All plans include a 14-day free trial. */}
         </p>
       </div>
 
@@ -119,7 +120,7 @@ export default function PricingPage() {
                 <span className="ml-1 text-muted-foreground">/{plan.period}</span>
               </div>
             </CardHeader>
-            <CardContent className="flex-grow">
+            <CardContent className="flex-grow" onClick={() => handleSubscribe(plan.id)}>
               <ul className="space-y-3">
                 {plan.features.map((feature, i) => (
                   <li key={i} className="flex items-center">
@@ -135,7 +136,6 @@ export default function PricingPage() {
             </CardContent>
             <CardFooter>
               <Button
-                onClick={() => handleSubscribe(plan.id)}
                 className="w-full"
                 variant={plan.popular ? "default" : "outline"}
                 size="lg"

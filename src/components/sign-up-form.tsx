@@ -37,17 +37,34 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('Attempting signup with email:', email)
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          data: {
+            email_confirmed: false
+          }
         },
       })
-      if (error) throw error
+      
+      if (error) {
+        console.error('Signup error details:', error)
+        throw error
+      }
+      
+      console.log('Signup response:', data)
       router.push('/auth/sign-up-success')
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'An error occurred')
+      console.error('Signup error:', error)
+      if (error instanceof Error) {
+        setError(`Error: ${error.message}`)
+      } else if (typeof error === 'object' && error !== null) {
+        setError(`Error: ${JSON.stringify(error)}`)
+      } else {
+        setError('An unexpected error occurred')
+      }
     } finally {
       setIsLoading(false)
     }
