@@ -6,8 +6,17 @@ import { type NextRequest } from 'next/server'
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const token_hash = searchParams.get('token_hash')
+  const token = searchParams.get('token')
   const type = searchParams.get('type') as EmailOtpType | null
   const next = searchParams.get('next') ?? '/'
+
+  if (token){
+    redirect(`/auth/login`)
+  }
+  console.log('token_hash', token_hash)
+  console.log('token', token)
+  console.log('type', type)
+  console.log('next', next)
 
   if (token_hash && type) {
     const supabase = await createClient()
