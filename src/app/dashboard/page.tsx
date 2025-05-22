@@ -6,23 +6,21 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { User } from "@supabase/supabase-js"
 
 export default async function Page() {
-  const supabase = createServerComponentClient({ cookies })
+  const supabase = await createClient()
   
-  // Get current user
+  // Get current user - no need to check for null since middleware handles auth
   const { data: { user: authUser } } = await supabase.auth.getUser()
-  
-  if (!authUser) {
-    throw new Error('User not found')
-  }
+  // Type assertion since middleware ensures user exists
+  const user = authUser as User
 
   // Get user details with subscription info
-  const { data: user, error: userError } = await supabase
+  const { data: userDetails, error: userError } = await supabase
     .from('users')
     .select(`
       *,
@@ -31,23 +29,18 @@ export default async function Page() {
         subscription_plans (*)
       )
     `)
-    .eq('auth_user_id', authUser.id)
+    .eq('auth_user_id', user.id)
     .single()
 
-  if (userError || !user) {
-    throw userError || new Error('User not found')
-  }
-
-  // Check if user doesn't has an active subscription
-  if (!user.is_subscription_active) {
-    throw new Error('Subscription not active or found')
+  if (userError || !userDetails) {
+    throw new Error('Failed to fetch user details')
   }
 
   // Get recent usage logs
   const { data: recentUsage } = await supabase
     .from('usage_logs')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userDetails.id)
     .order('created_at', { ascending: false })
     .limit(10)
 
@@ -65,17 +58,17 @@ export default async function Page() {
                 <div className="grid gap-4">
                   <div className="flex items-center justify-between">
                     <span>Current Plan:</span>
-                    <Badge variant={user.is_subscription_active ? "default" : "destructive"}>
-                      {user.subscriptions?.subscription_plans?.name || 'No Active Plan'}
+                    <Badge variant={userDetails.is_subscription_active ? "default" : "destructive"}>
+                      {userDetails.subscriptions?.subscription_plans?.name || 'No Active Plan'}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Credits Remaining:</span>
-                    <span className="font-medium">{user.credits_remaining || 0}</span>
+                    <span className="font-medium">{userDetails.credits_remaining || 0}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Monthly Credits:</span>
-                    <span className="font-medium">{user.monthly_credits || 0}</span>
+                    <span className="font-medium">{userDetails.monthly_credits || 0}</span>
                   </div>
                 </div>
               </CardContent>

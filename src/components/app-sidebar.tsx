@@ -35,9 +35,17 @@ import {
 } from "@/components/ui/sidebar"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  user: User & {
+  user: {
+    email?: string | null
+    user_metadata?: {
+      name?: string
+    }
+    metadata: {
+      full_name: string | null
+      preferred_name: string | null
+      email: string
+    }
     avatar: string
-    [key: string]: string
   }
 }
 
@@ -178,8 +186,8 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={{
-          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-          email: user.email || '',
+          name: user.metadata.preferred_name || user.metadata.full_name || user.email?.split('@')[0] || 'User',
+          email: user.metadata.email || user.email || '',
           avatar: user.avatar,
         }} />
       </SidebarFooter>

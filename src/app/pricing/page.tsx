@@ -4,11 +4,13 @@
 "use client"
 
 import { useRouter, usePathname } from "next/navigation"
-import { useUser } from "@supabase/auth-helpers-react"
+import { createClient } from "@/lib/supabase/client"
 import { Check, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useEffect, useState } from "react"
+import { User } from '@supabase/supabase-js'
 
 const PRICES = [
   {
@@ -57,24 +59,52 @@ const PRICES = [
 ]
 
 export default function PricingPage() {
-  const user = useUser()
+  const [user, setUser] = useState<User | null>(null)
   const router = useRouter()
   const pathname = usePathname()
 
+  useEffect(() => {
+    const supabase = createClient()
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    getUser()
+  }, [])
+
   const handleSubscribe = async (priceId: string) => {
-    console.log(priceId)
+    console.log('User auth status:', !!user)
+    console.log('Attempting to subscribe to price:', priceId)
+    
     if (!user) {
+      console.log('No authenticated user found, redirecting to login')
       router.push(`/auth/login?redirectedFrom=${encodeURIComponent(pathname)}`)
       return
     }
 
-    const res = await fetch("/api/stripe/checkout", {
-      method: "POST",
-      body: JSON.stringify({ priceId }),
-    })
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priceId, type: 'subscription' }),
+      })
 
-    const data = await res.json()
-    if (data?.url) window.location.href = data.url
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`)
+      }
+
+      const data = await res.json()
+      if (data?.url) {
+        console.log('Redirecting to Stripe checkout')
+        window.location.href = data.url
+      } else {
+        console.error('No checkout URL received from API')
+      }
+    } catch (error) {
+      console.error('Error during checkout:', error)
+    }
   }
 
   return (

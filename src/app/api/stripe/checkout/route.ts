@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
@@ -7,11 +8,17 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 export async function POST(req: Request) {
   console.log('🛍️ Checkout request received')
   try {
+    const { priceId, type } = await req.json() // type can be 'subscription' or 'credit'
+    
     // Get the user from Supabase auth
     const supabase = await createClient()
+    const supabaseAdmin = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-
+  
     if (authError || !user) {
       console.error('❌ Authentication error:', authError)
       return NextResponse.json(
@@ -22,7 +29,7 @@ export async function POST(req: Request) {
     console.log('✅ Authenticated user:', user.id)
 
     // Get or create Stripe customer
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('stripe_customer_id')
       .eq('id', user.id)
@@ -43,7 +50,7 @@ export async function POST(req: Request) {
       console.log('✅ Created new customer:', customer.id)
 
       // Save the Stripe customer ID to the user's record
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from('users')
         .update({ stripe_customer_id: customer.id })
         .eq('id', user.id)
@@ -63,15 +70,16 @@ export async function POST(req: Request) {
       customer: customerId,
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID,
+          price: priceId,
           quantity: 1,
         },
       ],
-      mode: 'subscription',
+      mode: type === 'subscription' ? 'subscription' : 'payment',
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing?canceled=true`,
       metadata: {
         supabaseUid: user.id,
+        type: type, // Store the type in metadata for webhook processing
       },
     })
     console.log('✅ Created checkout session:', session.id)

@@ -12,16 +12,47 @@ interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface UserMetadata {
   id: string
+  email: string
+  full_name: string | null
+  preferred_name: string | null
+  user_role: string
+  stripe_customer_id: string | null
+  active_subscription_id: string | null
   is_subscription_active: boolean
-  [key: string]: any
+  is_on_grace_period: boolean
+  is_user_active: boolean
+  onboarding_complete: boolean
+  monthly_credits: number
+  credits_remaining: number
+  last_credit_reset: string | null
+  timezone: string
+  locale: string
+  referral_code: string | null
+  referred_by: string | null
+  utm_source: string | null
+  utm_campaign: string | null
+  feature_flags: Record<string, any>
+  created_at: string
+  updated_at: string
+}
+
+interface SubscriptionData {
+  id: string
+  status: string
+  cancel_at_period_end: boolean
+  current_period_start: string
+  current_period_end: string
+  trial_end: string | null
+  is_active: boolean
+  plan_id: string
 }
 
 interface CombinedUser extends User {
   avatar: string
-  [key: string]: any
+  metadata: UserMetadata
+  subscription?: SubscriptionData
 }
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -33,24 +64,38 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   if (error || !user) throw error || new Error('User not found')
 
+  // Fetch user metadata
   const { data: userMetadata } = await supabase
     .from('users')
     .select('*')
-    .eq('id', user.id)
+    .eq('auth_user_id', user.id)
     .single()
 
-  if (!userMetadata?.is_subscription_active) {
-    throw error || new Error('Subscription not active or found')
+  if (!userMetadata) throw new Error('User metadata not found')
+
+  // Fetch subscription data if user has an active subscription
+  let subscriptionData: SubscriptionData | undefined
+  if (userMetadata.active_subscription_id) {
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('id', userMetadata.active_subscription_id)
+      .single()
+    
+    if (subscription) {
+      subscriptionData = subscription
+    }
   }
 
   const email = user.email?.trim().toLowerCase()
   const hash = md5(email || '')
   const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=identicon`
 
-  // ✅ Combine auth user + users table metadata
+  // Combine auth user + users table metadata + subscription data
   const combinedUser: CombinedUser = {
     ...user,
-    ...userMetadata,
+    metadata: userMetadata,
+    subscription: subscriptionData,
     avatar: gravatarUrl,
   }
 

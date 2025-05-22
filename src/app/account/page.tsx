@@ -17,20 +17,35 @@ export default async function AccountPage() {
   const user = data.user
 
   // Fetch subscription metadata from public.users
-  const { data: userMetadata } = await supabase
+  const { data: publicUser } = await supabase
     .from('users')
-    .select('plan, subscription_status, can_bulk_upload, stripe_customer_id, created_at')
-    .eq('id', user.id)
+    .select('*')
+    .eq('auth_user_id', user.id)
     .single();
+
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', publicUser.id)
+    .single();
+
+  const { data: subscriptionPlan } = await supabase
+    .from('subscription_plans')
+    .select('*')
+    .eq('id', subscription?.plan_id)
+    .single();
+    
+  if (!publicUser) {
+    throw new Error('User metadata not found');
+  }
+
+  console.log('publicUser', publicUser)
 
 
   // Format date strings for better readability
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString()
   }
-
-  // Helper to check if an object has properties
-  const hasProperties = (obj: object) => obj && Object.keys(obj).length > 0
 
   return (
     <div className="container mx-auto py-10 px-4">
@@ -96,86 +111,52 @@ export default async function AccountPage() {
                   </dl>
                 </div>
 
-                {userMetadata && (
+                {publicUser && (
                   <div>
                     <h3 className="text-lg font-medium">Subscription Info</h3>
                     <Separator className="my-2" />
                     <dl className="grid grid-cols-1 gap-2 text-sm">
                       <div className="flex justify-between py-1">
                         <dt className="font-medium text-muted-foreground">Plan</dt>
-                        <dd>{userMetadata.plan || 'Free'}</dd>
+                        <dd>{subscriptionPlan?.name || 'None'}</dd>
                       </div>
                       <div className="flex justify-between py-1">
                         <dt className="font-medium text-muted-foreground">Subscription Status</dt>
-                        <dd>{userMetadata.subscription_status || 'inactive'}</dd>
-                      </div>
-                      <div className="flex justify-between py-1">
-                        <dt className="font-medium text-muted-foreground">Bulk Upload</dt>
-                        <dd>{userMetadata.can_bulk_upload ? 'Enabled' : 'Disabled'}</dd>
+                        <dd>{publicUser.is_subscription_active}</dd>
                       </div>
                       <div className="flex justify-between py-1">
                         <dt className="font-medium text-muted-foreground">Stripe Customer ID</dt>
-                        <dd>{userMetadata.stripe_customer_id || 'Not assigned'}</dd>
+                        <dd>{publicUser.stripe_customer_id || 'Not assigned'}</dd>
                       </div>
                       <div className="flex justify-between py-1">
-                        <dt className="font-medium text-muted-foreground">User Record Created</dt>
-                        <dd>{formatDate(userMetadata.created_at)}</dd>
+                        <dt className="font-medium text-muted-foreground">Monthly Credits</dt>
+                        <dd>{publicUser.monthly_credits}</dd>
                       </div>
                     </dl>
                   </div>
                 )}
 
-                {hasProperties(user.app_metadata) && (
+                {publicUser && (
                   <div>
-                    <h3 className="text-lg font-medium">App Metadata</h3>
+                    <h3 className="text-lg font-medium">Entire public.user</h3>
                     <Separator className="my-2" />
-                    <pre className="bg-muted p-3 rounded-md text-xs overflow-auto max-h-32">
-                      {JSON.stringify(user.app_metadata, null, 2)}
+                    <pre className="bg-muted p-3 rounded-md text-xs overflow-auto max-h-94">
+                      {JSON.stringify(publicUser, null, 2)}
                     </pre>
                   </div>
                 )}
 
-
-
-                {hasProperties(user.user_metadata) && (
+                {user && (
                   <div>
-                    <h3 className="text-lg font-medium">User Metadata</h3>
+                    <h3 className="text-lg font-medium">Entire auth.user</h3>
                     <Separator className="my-2" />
-                    <pre className="bg-muted p-3 rounded-md text-xs overflow-auto max-h-32">
-                      {JSON.stringify(user.user_metadata, null, 2)}
-                    </pre>
-                  </div>
-                )}
-
-                {user.identities !== undefined && hasProperties(user.identities) && (
-                  <div>
-                    <h3 className="text-lg font-medium">Identities</h3>
-                    <Separator className="my-2" />
-                    <pre className="bg-muted p-3 rounded-md text-xs overflow-auto max-h-32">
-                      {JSON.stringify(user.identities, null, 2)}
-                    </pre>
-                  </div>
-                )}
-
-                {userMetadata !== null && hasProperties(userMetadata) && (
-                  <div>
-                    <h3 className="text-lg font-medium">Subscription Info Json</h3>
-                    <Separator className="my-2" />
-                    <pre className="bg-muted p-3 rounded-md text-xs overflow-auto max-h-32">
-                      {JSON.stringify(userMetadata, null, 2)}
-                    </pre>
-                  </div>
-                )}
-
-                {hasProperties(user) && (
-                  <div>
-                    <h3 className="text-lg font-medium">Entire User Object</h3>
-                    <Separator className="my-2" />
-                    <pre className="bg-muted p-3 rounded-md text-xs overflow-auto max-h-32">
+                    <pre className="bg-muted p-3 rounded-md text-xs overflow-auto max-h-94">
                       {JSON.stringify(user, null, 2)}
                     </pre>
                   </div>
                 )}
+
+
               </div>
             </div>
           </div>

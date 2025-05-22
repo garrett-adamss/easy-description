@@ -49,6 +49,7 @@ export async function updateSession(request: NextRequest) {
 
   // 🔒 Auth-only protection routes
   if (matches(authOnlyRoutes) && !user) {
+    console.log('❌ No authenticated user found in middleware')
     url.pathname = '/auth/login'
     url.searchParams.set('redirectedFrom', pathname)
     return NextResponse.redirect(url)
@@ -57,6 +58,7 @@ export async function updateSession(request: NextRequest) {
   // 🔒 Auth + Subscription protection routes
   if (matches(authAndSubscriptionRoutes)) {
     if (!user) {
+      console.log('❌ No authenticated user found in middleware')
       url.pathname = '/auth/login'
       url.searchParams.set('redirectedFrom', pathname)
       return NextResponse.redirect(url)
@@ -69,6 +71,7 @@ export async function updateSession(request: NextRequest) {
       .single()
 
     if (error || !appUser?.is_subscription_active) {
+      console.log('❌ No active subscription found in middleware')
       // const url = request.nextUrl.clone()
       url.pathname = '/pricing'
       return NextResponse.redirect(url)
