@@ -1,17 +1,15 @@
+/* eslint-disable react/no-unescaped-entities */
 import Link from "next/link"
-import { ArrowRight, CheckCircle, CreditCard, ExternalLink, Lock, Package, ShieldCheck } from "lucide-react"
+import { ArrowRight, CheckCircle, CreditCard, ExternalLink, Lock, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Navbar from "@/components/navbar"
 
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar/>
-
       {/* Hero Section */}
-      <section className="bg-muted/50 py-12 md:py-16 lg:py-20 w-full">
+      <section className="bg-muted/50 py-12 md:py-16 lg:py-24 w-full">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
             <div className="space-y-2">

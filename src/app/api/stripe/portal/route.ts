@@ -25,8 +25,10 @@ export async function POST(req: Request) {
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('stripe_customer_id')
-      .eq('id', user.id)
+      .eq('auth_user_id', user.id)
       .single()
+
+    console.log('👤 User data:', userData)
 
     if (userError || !userData?.stripe_customer_id) {
       console.error('❌ No Stripe customer found:', userError)

@@ -11,7 +11,7 @@ export default async function Navbar() {
   return (
     <>
       <header className="border-b w-full bg-background sticky top-0">
-        <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+        <div className="container flex h-16 items-center justify-between px-4 md:px-6 w-full">
           <div className="flex items-center gap-2 font-bold">
             <Link href="/" className="flex items-center gap-2">
               <Package className="h-6 w-6" />

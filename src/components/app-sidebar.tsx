@@ -18,7 +18,6 @@ import {
   IconSettings,
   IconUsers,
 } from "@tabler/icons-react"
-import { User } from "@supabase/supabase-js"
 
 import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
@@ -33,20 +32,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { UserData } from "@/lib/user"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  user: {
-    email?: string | null
-    user_metadata?: {
-      name?: string
-    }
-    metadata: {
-      full_name: string | null
-      preferred_name: string | null
-      email: string
-    }
-    avatar: string
-  }
+  user: UserData
 }
 
 const navData = {
@@ -186,8 +175,8 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={{
-          name: user.metadata.preferred_name || user.metadata.full_name || user.email?.split('@')[0] || 'User',
-          email: user.metadata.email || user.email || '',
+          name: user.user?.preferred_name || user.user?.full_name || user.authUser?.email?.split('@')[0] || 'User',
+          email: user.user?.email || user.authUser?.email || '',
           avatar: user.avatar,
         }} />
       </SidebarFooter>

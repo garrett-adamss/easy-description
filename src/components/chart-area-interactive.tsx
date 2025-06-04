@@ -47,10 +47,19 @@ export function ChartAreaInteractive() {
     async function fetchData() {
       try {
         const response = await fetch('/api/usage/stats')
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.error('No usage data found')
+            setData([])
+            return
+          }
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         const json = await response.json()
         setData(json)
       } catch (error) {
         console.error('Error fetching usage stats:', error)
+        setData([])
       } finally {
         setIsLoading(false)
       }

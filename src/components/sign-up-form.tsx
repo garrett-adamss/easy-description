@@ -24,6 +24,25 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  const checkAllowList = async (email: string) => {
+    const supabase = createClient()
+    const domain = email.split('@')[1]
+    
+    // Check if email or domain exists in allow_list
+    const { data, error } = await supabase
+      .from('allow_list')
+      .select('*')
+      .or(`email.eq.${email},domain.eq.${domain}`)
+      .limit(1)
+    
+    if (error) {
+      console.error('Allow list check error:', error)
+      throw new Error('Failed to verify authorization')
+    }
+    
+    return data && data.length > 0
+  }
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     const supabase = createClient()
@@ -37,6 +56,20 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
     }
 
     try {
+      // Check allow list if enabled
+      const isAllowListEnabled = process.env.NEXT_PUBLIC_ENABLE_ALLOW_LIST === 'true'
+      
+      if (isAllowListEnabled) {
+        console.log('Checking allow list for email:', email)
+        const isAuthorized = await checkAllowList(email)
+        
+        if (!isAuthorized) {
+          setError('You are not authorized to sign up with this email.')
+          setIsLoading(false)
+          return
+        }
+      }
+
       console.log('Attempting signup with email:', email)
       const { data, error } = await supabase.auth.signUp({
         email,

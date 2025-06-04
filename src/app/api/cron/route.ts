@@ -99,7 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const resetCredits = await supabase
           .from('users')
           .update({
-            credits_remaining: userDetails.monthly_credits,
+            credits_remaining: 0,
             last_credit_reset: now.toISOString()
           })
           .eq('id', user.id)

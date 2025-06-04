@@ -39,9 +39,6 @@ export default async function AccountPage() {
     throw new Error('User metadata not found');
   }
 
-  console.log('publicUser', publicUser)
-
-
   // Format date strings for better readability
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString()

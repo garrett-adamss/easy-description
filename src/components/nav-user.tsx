@@ -8,7 +8,7 @@ import {
   IconUserCircle,
 } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
-
+import { createClient } from "@/lib/supabase/client"
 import {
   Avatar,
   AvatarFallback,
@@ -42,8 +42,31 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const router = useRouter()
 
+  const handleBilling = async () => {
+    const res = await fetch('/api/stripe/portal', { method: 'POST' })
+
+    if (!res.ok) {
+      console.error('❌ Portal request failed:', res.status)
+      return
+    }
+
+    let data
+    try {
+      data = await res.json()
+    } catch (e) {
+      console.error('❌ Failed to parse JSON:', e)
+      return
+    }
+
+    if (data?.url) {
+      window.location.href = data.url
+    }
+  }
+
   const handleLogout = async () => {
-    // Add your logout logic here
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/auth/login')
   }
 
   return (
@@ -94,14 +117,14 @@ export function NavUser({
                 <IconUserCircle className="mr-2 h-4 w-4" />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/api/stripe/portal')} className="cursor-pointer">
+              <DropdownMenuItem onClick={handleBilling} className="cursor-pointer">
                 <IconCreditCard className="mr-2 h-4 w-4" />
                 Billing
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/dashboard/notifications')} className="cursor-pointer">
+              {/* <DropdownMenuItem onClick={() => router.push('/dashboard/notifications')} className="cursor-pointer">
                 <IconNotification className="mr-2 h-4 w-4" />
                 Notifications
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
