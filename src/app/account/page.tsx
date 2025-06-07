@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { User } from "lucide-react"
+import Image from "next/image"
 
 export default async function AccountPage() {
   const supabase = await createClient()
@@ -64,7 +65,7 @@ export default async function AccountPage() {
             <div className="flex items-center justify-center md:w-1/3">
               <div className="bg-muted rounded-full p-8 w-32 h-32 flex items-center justify-center">
                 {user.user_metadata?.avatar_url ? (
-                  <img
+                  <Image
                     src={user.user_metadata.avatar_url || "/placeholder.svg"}
                     alt="User avatar"
                     className="rounded-full w-full h-full object-cover"

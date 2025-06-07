@@ -1,4 +1,6 @@
-import { NextApiRequest, NextApiResponse } from 'next'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// /* eslint-disable @typescript-eslint/no-explicit-any */
+import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
@@ -9,12 +11,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') return res.status(405).end()
-
-  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
+export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get('authorization')
+  
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     console.warn('Unauthorized cron request')
-    return res.status(401).end()
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   console.log('🔁 Starting nightly Stripe sync cron job...')
@@ -135,9 +137,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     console.log('✅ Stripe sync cron job completed successfully.')
-    return res.status(200).json({ status: 'sync complete', count: stripeSubs.data.length })
+    return NextResponse.json({ status: 'sync complete', count: stripeSubs.data.length })
   } catch (err) {
     console.error('❌ Stripe sync cron job failed:', err)
-    return res.status(500).json({ error: 'Internal server error' })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

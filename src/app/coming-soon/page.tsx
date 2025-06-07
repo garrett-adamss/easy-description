@@ -58,7 +58,7 @@ export default function ComingSoonPage() {
       <div className="max-w-md mx-auto text-center space-y-8">
         <div className="space-y-4">
           <h1 className="text-4xl font-bold text-white">Coming Soon</h1>
-          <p>We're working on something great. Leave your email to get notified.</p>
+          <p>We&apos;re working on something great. Leave your email to get notified.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -87,9 +87,9 @@ export default function ComingSoonPage() {
             <div className="mx-auto w-16 h-16 bg-green-900 rounded-full flex items-center justify-center mb-4">
               <Mail className="w-8 h-8 text-green-400" />
             </div>
-            <DialogTitle className="text-2xl text-white">You're all set!</DialogTitle>
+            <DialogTitle className="text-2xl text-white">You&apos;re all set!</DialogTitle>
             <DialogDescription className="text-base pt-2">
-              Thanks for signing up. We'll notify you when we launch.
+              Thanks for signing up. We&apos;ll notify you when we launch.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center mt-6">

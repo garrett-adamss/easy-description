@@ -1,4 +1,4 @@
-// import { createClient } from '@/lib/supabase/server'
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
@@ -148,7 +148,7 @@ export async function POST(req: Request) {
           }
 
           // Get user data using the admin helper
-          const { user, activeSubscription, subscriptionPlan } = await getUserDataWithAdmin(supabaseAdmin, supabaseUid)
+          const { user } = await getUserDataWithAdmin(supabaseAdmin, supabaseUid)
           console.log('✅ Found user:', user.id)
 
           // Update user's stripe_customer_id if not set
@@ -185,7 +185,7 @@ export async function POST(req: Request) {
           }
 
           // Create or update subscription record
-          const { data: existingSub, error: subError } = await supabaseAdmin
+          const { data: existingSub } = await supabaseAdmin
             .from('subscriptions')
             .select('id')
             .eq('stripe_subscription_id', subscription.id)

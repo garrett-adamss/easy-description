@@ -1,9 +1,7 @@
-/* eslint-disable react/no-unescaped-entities */
 import Link from "next/link"
-import { ArrowRight, CheckCircle, Sparkles, Zap } from "lucide-react"
+import { ArrowRight, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function SubscriptionRenewedPage() {
   return (
@@ -19,7 +17,7 @@ export default function SubscriptionRenewedPage() {
         </div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome Back!</h1>
         <p className="text-muted-foreground max-w-md">
-          We're thrilled to have you with us again.
+          We&apos;re thrilled to have you with us again.
         </p>
       </div>
 
