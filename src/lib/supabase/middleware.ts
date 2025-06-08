@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const authOnlyRoutes = ['/account']
-const authAndSubscriptionRoutes = ['/dashboard', '/app']
+const authAndSubscriptionRoutes = ['/dashboard', '/app', '/credit-pricing']
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({

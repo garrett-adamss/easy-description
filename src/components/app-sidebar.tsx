@@ -121,8 +121,8 @@ const navData = {
       icon: IconSettings,
     },
     {
-      title: "Get Help",
-      url: "#",
+      title: "Need Help?",
+      url: "/help",
       icon: IconHelp,
     },
     {

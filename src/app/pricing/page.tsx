@@ -5,27 +5,25 @@
 
 import { useRouter, usePathname } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Check, CheckCircle2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { useEffect, useState } from "react"
 import { User } from '@supabase/supabase-js'
+import { PricingCard } from "@/components/pricing-card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 const PRICES = [
   {
     id: "price_1RO9awBSFWoGr8GMlDFFI2J9",
-    label: "Basic",
-    price: "$25",
+    label: "Starter",
+    price: "$9",
     period: "month",
     description: "Perfect for individuals and small projects",
-    features: ["Up to 3 projects", "1GB storage", "Basic analytics", "Email support"],
+    features: ["4 credits / month", "1GB storage", "Basic analytics", "Email support"],
     buttonText: "Get Started",
   },
   {
     id: "price_1ROsTZBSFWoGr8GM3So2Mrk0",
     label: "Pro",
-    price: "$50",
+    price: "$19",
     period: "month",
     description: "Ideal for growing businesses and teams",
     popular: true,
@@ -42,7 +40,7 @@ const PRICES = [
   {
     id: "price_1ROsSwBSFWoGr8GMm6DnBShN",
     label: "Enterprise",
-    price: "$100",
+    price: "$39",
     period: "month",
     description: "For large organizations with advanced needs",
     features: [
@@ -73,11 +71,8 @@ export default function PricingPage() {
   }, [])
 
   const handleSubscribe = async (priceId: string) => {
-    console.log('User auth status:', !!user)
-    console.log('Attempting to subscribe to price:', priceId)
-    
+
     if (!user) {
-      console.log('No authenticated user found, redirecting to login')
       router.push(`/auth/login?redirectedFrom=${encodeURIComponent(pathname)}`)
       return
     }
@@ -112,82 +107,38 @@ export default function PricingPage() {
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold tracking-tight mb-3">Simple, Transparent Pricing</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Choose the perfect plan for your needs. 
+          Choose the perfect plan for your needs.
           {/* All plans include a 14-day free trial. */}
         </p>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
         {PRICES.map((plan) => (
-          <Card
+          <PricingCard
             key={plan.id}
-            className={`flex flex-col h-full relative overflow-hidden cursor-pointer group transition-all duration-300 hover:scale-105 ${
-              plan.popular ? "border-primary shadow-lg" : ""
-            }`}
-            onMouseMove={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect()
-              const x = e.clientX - rect.left
-              const y = e.clientY - rect.top
-
-              e.currentTarget.style.setProperty("--x", `${x}px`)
-              e.currentTarget.style.setProperty("--y", `${y}px`)
-            }}
-            onClick={() => handleSubscribe(plan.id)}
-          >
-            <div
-              className="absolute pointer-events-none inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              style={{
-                background: "radial-gradient(circle 80px at var(--x) var(--y), rgba(255, 255, 255, 0.2), transparent)",
-                zIndex: 1,
-              }}
-            />
-            {plan.popular && (
-              <Badge className="absolute top-3 right-4 bg-primary hover:bg-primary z-10">Best Value</Badge>
-            )}
-            <CardHeader className={plan.popular ? "pb-8" : "pb-6"}>
-              <CardTitle className="text-2xl">{plan.label}</CardTitle>
-              <CardDescription className="pt-1.5">{plan.description}</CardDescription>
-              <div className="mt-4 flex items-baseline">
-                <span className="text-4xl font-extrabold">{plan.price}</span>
-                <span className="ml-1 text-muted-foreground">/{plan.period}</span>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <ul className="space-y-3">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-center">
-                    {plan.popular ? (
-                      <CheckCircle2 className="h-5 w-5 text-primary mr-2 flex-shrink-0" />
-                    ) : (
-                      <Check className="h-5 w-5 text-muted-foreground mr-2 flex-shrink-0" />
-                    )}
-                    <span className={plan.popular ? "font-medium" : ""}>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button
-                className="w-full"
-                variant={plan.popular ? "default" : "outline"}
-                size="lg"
-              >
-                {plan.buttonText}
-              </Button>
-            </CardFooter>
-          </Card>
+            {...plan}
+            onClick={handleSubscribe}
+          />
         ))}
+
       </div>
 
       <div className="mt-16 text-center">
-        <h2 className="text-2xl font-semibold mb-4">Need something custom?</h2>
-        <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-          Contact our sales team for a custom quote tailored to your specific requirements.
-        </p>
-        <Button variant="outline" size="lg">
-          Contact Sales
-        </Button>
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold">Need more credits?</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              You can purchase additional credits in bulk to extend your usage.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Please note that a valid subscription is required to buy additional credits.
+            </p>
+          </CardContent>
+        </Card>
       </div>
+      
     </div>
   )
 }
