@@ -1,144 +1,74 @@
-// price_1RO9awBSFWoGr8GMlDFFI2J9
-// price_1ROsTZBSFWoGr8GM3So2Mrk0
-// price_1ROsSwBSFWoGr8GMm6DnBShN
-"use client"
+import { createClient } from "@/lib/supabase/server"
+import { PricingPageClient } from "./pricing-client"
+import { USE_SUPABASE_FOR_PRICING } from "../../../config/featues"
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { loadSubscriptionPricingFromCSV, type PriceData } from "@/lib/utils/csv-parser"
 
-import { useRouter, usePathname } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { useEffect, useState } from "react"
-import { User } from '@supabase/supabase-js'
-import { PricingCard } from "@/components/pricing-card"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+// Define the type for product offers from the database
+type ProductOffer = {
+  stripe_product_id: string
+  name: string
+  description: string | null
+  features: Record<string, string> | null
+  button_text: string | null
+  popular: boolean | null
+  plan_type: string
+  price: number
+  annual_price: number | null
+  credits: number
+  is_deleted: boolean | null
+  created_at: string
+}
 
-const PRICES = [
-  {
-    id: "price_1RO9awBSFWoGr8GMlDFFI2J9",
-    label: "Starter",
-    price: "$9",
-    period: "month",
-    description: "Perfect for individuals and small projects",
-    features: ["4 credits / month", "1GB storage", "Basic analytics", "Email support"],
-    buttonText: "Get Started",
-  },
-  {
-    id: "price_1ROsTZBSFWoGr8GM3So2Mrk0",
-    label: "Pro",
-    price: "$19",
-    period: "month",
-    description: "Ideal for growing businesses and teams",
-    popular: true,
-    features: [
-      "Unlimited projects",
-      "10GB storage",
-      "Advanced analytics",
-      "Priority support",
-      "Team collaboration",
-      "Custom integrations",
-    ],
-    buttonText: "Get Pro",
-  },
-  {
-    id: "price_1ROsSwBSFWoGr8GMm6DnBShN",
-    label: "Enterprise",
-    price: "$39",
-    period: "month",
-    description: "For large organizations with advanced needs",
-    features: [
-      "Unlimited everything",
-      "100GB storage",
-      "Enterprise analytics",
-      "Dedicated support",
-      "Advanced security",
-      "Custom development",
-      "SLA guarantees",
-    ],
-    buttonText: "Contact Sales",
-  },
-]
-
-export default function PricingPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const router = useRouter()
-  const pathname = usePathname()
-
-  useEffect(() => {
-    const supabase = createClient()
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-    }
-    getUser()
-  }, [])
-
-  const handleSubscribe = async (priceId: string) => {
-
-    if (!user) {
-      router.push(`/auth/login?redirectedFrom=${encodeURIComponent(pathname)}`)
-      return
-    }
-
-    try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ priceId, type: 'subscription' }),
-      })
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`)
-      }
-
-      const data = await res.json()
-      if (data?.url) {
-        console.log('Redirecting to Stripe checkout')
-        window.location.href = data.url
-      } else {
-        console.error('No checkout URL received from API')
-      }
-    } catch (error) {
-      console.error('Error during checkout:', error)
-    }
+export default async function PricingPage() {
+  // If USE_SUPABASE_FOR_PRICING is false, use CSV data directly
+  if (!USE_SUPABASE_FOR_PRICING) {
+    const csvPrices = loadSubscriptionPricingFromCSV()
+    return <PricingPageClient prices={csvPrices} />
   }
 
-  return (
-    <div className="container mx-auto py-16 px-4 md:px-6">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold tracking-tight mb-3">Simple, Transparent Pricing</h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Choose the perfect plan for your needs.
-          {/* All plans include a 14-day free trial. */}
-        </p>
-      </div>
+  const supabase = await createClient()
+  
+  // Fetch pricing data from the product_offers table
+  const { data: productOffers, error } = await supabase
+    .from('product_offers')
+    .select('*')
+    .eq('plan_type', 'subscription')
+    .eq('is_deleted', false)
+    .order('price', { ascending: true })
 
-      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-        {PRICES.map((plan) => (
-          <PricingCard
-            key={plan.id}
-            {...plan}
-            onClick={handleSubscribe}
-          />
-        ))}
+  if (error) {
+    console.error('Error fetching product offers:', error)
+    // Use CSV data as fallback instead of hardcoded data
+    const fallbackPrices = loadSubscriptionPricingFromCSV()
+    return <PricingPageClient prices={fallbackPrices} />
+  }
 
-      </div>
+  // Transform database results to match the expected format
+  const prices = productOffers?.map((offer: ProductOffer) => {
+    // Convert features from jsonb to string array
+    let featuresArray: string[] = []
+    if (offer.features) {
+      if (Array.isArray(offer.features)) {
+        featuresArray = offer.features
+      } else if (typeof offer.features === 'object') {
+        // If features is an object, convert values to array
+        featuresArray = Object.values(offer.features).filter(Boolean) as string[]
+      }
+    }
 
-      <div className="mt-16 text-center">
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold">Need more credits?</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              You can purchase additional credits in bulk to extend your usage.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Please note that a valid subscription is required to buy additional credits.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      
-    </div>
-  )
+    return {
+      id: offer.stripe_product_id,
+      stripe_product_id: offer.stripe_product_id,
+      label: offer.name,
+      price: Number(offer.price),
+      period: "month", // Default to month since it's not in your schema
+      description: offer.description || '',
+      popular: offer.popular || false,
+      features: featuresArray,
+      buttonText: offer.button_text || 'Get Started',
+    }
+  }) || []
+
+  return <PricingPageClient prices={prices} />
 }

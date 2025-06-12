@@ -1,0 +1,4 @@
+stripe_product_id,name,description,features,button_text,popular,plan_type,price,annual_price,credits,is_deleted,created_at,label
+prod_STcNdzcjt0KiFw,Starter Subscription,Perfect for individuals and small projects,"[""4 credits / month"", ""1GB storage"", ""Basic analytics"", ""Email support""]",Get Started,false,subscription,9,,4,false,2025-06-11 20:01:33,Starter
+prod_STcOYVnS2hUwHd,Pro Subscription,Ideal for growing businesses and teams,"[""Unlimited projects"", ""10GB storage"", ""Advanced analytics"", ""Priority support"", ""Team collaboration"", ""Custom integrations""]",Get Pro,true,subscription,19,,12,false,2025-06-11 20:04:59,Pro
+prod_STcQUjjWmldrY7,Studio Subscription,For large organizations with advanced needs,"[""Unlimited everything"", ""100GB storage"", ""Enterprise analytics"", ""Dedicated support"", ""Advanced security"", ""Custom development"", ""SLA guarantees""]",Get Studio,false,subscription,39,,30,false,2025-06-11 20:05:47,Studio
