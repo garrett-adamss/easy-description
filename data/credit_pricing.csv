@@ -1,4 +1,4 @@
-stripe_product_id,name,description,features,button_text,popular,plan_type,price,annual_price,credits,is_deleted,created_at,label
-prod_STcKhurNwcCwzi,10 Credits,Perfect for occasional boosts,"[""30 Credits"", ""Instant Delivery"", ""No Expiry""]",Buy Now,false,credit,10,,10,false,2025-06-11 19:55:46,Mini Top-Up
-prod_STcL7n3NXjs9xN,30 Credits,Great for regular usage,"[""30 Credits"", ""Instant Delivery"", ""No Expiry"", ""5% Bonus Credits""]",Buy Now,false,credit,24,,30,false,2025-06-11 19:57:24,Backlog Boost
-prod_STcMoxNSgdlsKX,70 Credits,Best value for power users,"[""70 Credits"", ""Instant Delivery"", ""No Expiry"", ""10% Bonus Credits"", ""Priority Support""]",Go Big,true,credit,45,,70,false,2025-06-11 19:58:30,Power Pack
+stripe_price_id,name,description,features,button_text,popular,plan_type,price,annual_price,credits,is_deleted,created_at,label
+price_1RYf5gBSFWoGr8GMSK6mfeID,10 Credits,Perfect for occasional boosts,"[""30 Credits"", ""Instant Delivery"", ""No Expiry""]",Buy Now,false,credit,10,,10,false,2025-06-11 19:55:46,Mini Top-Up
+price_1RYf6SBSFWoGr8GM6U1eD57j,30 Credits,Great for regular usage,"[""30 Credits"", ""Instant Delivery"", ""No Expiry"", ""5% Bonus Credits""]",Buy Now,false,credit,24,,30,false,2025-06-11 19:57:24,Backlog Boost
+price_1RYf7JBSFWoGr8GM5flUa6Y4,70 Credits,Best value for power users,"[""70 Credits"", ""Instant Delivery"", ""No Expiry"", ""10% Bonus Credits"", ""Priority Support""]",Go Big,true,credit,45,,70,false,2025-06-11 19:58:30,Power Pack

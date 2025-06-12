@@ -43,7 +43,7 @@ async function getUserDataWithAdmin(supabaseAdmin: any, supabaseUid: string) {
     const { data: plan, error: planError } = await supabaseAdmin
       .from('product_offers')
       .select('*')
-      .eq('stripe_product_id', activeSubscription.stripe_price_id)
+      .eq('stripe_price_id', activeSubscription.stripe_price_id)
       .single()
 
     if (planError) {
@@ -173,7 +173,7 @@ export async function POST(req: Request) {
           const { data: plan, error: planError } = await supabaseAdmin
             .from('product_offers')
             .select('*')
-            .eq('stripe_product_id', priceId)
+            .eq('stripe_price_id', priceId)
             .eq('plan_type', 'subscription')
             .single()
 
@@ -303,7 +303,7 @@ export async function POST(req: Request) {
             const { data: plan, error: planError } = await supabaseAdmin
               .from('product_offers')
               .select('*')
-              .eq('stripe_product_id', priceId)
+              .eq('stripe_price_id', priceId)
               .eq('plan_type', 'subscription')
               .single()
 
@@ -369,7 +369,7 @@ export async function POST(req: Request) {
             const { data: creditPlan, error: creditPlanError } = await supabaseAdmin
               .from('product_offers')
               .select('*')
-              .eq('stripe_product_id', priceId)
+              .eq('stripe_price_id', priceId)
               .eq('plan_type', 'credit')
               .single()
 

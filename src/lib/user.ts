@@ -50,7 +50,7 @@ export type UserData = {
   } | null
   subscriptionPlan:{
     id: string
-    stripe_product_id: string
+    stripe_price_id: string
     name: string
     description: string | null
     features: Record<string, any>
@@ -67,7 +67,7 @@ export type UserData = {
     purchase_credits: number
   } | null
   credits:{
-    totalCredits: number
+    availableCredits: number
     usedThisPeriod: number
     subscriptionRenewsAt: string
   } | null
@@ -132,7 +132,7 @@ export async function getUserData(): Promise<UserData> {
     const { data: plan, error: planError } = await supabase
       .from('product_offers')
       .select('*')
-      .eq('stripe_product_id', activeSubscription.stripe_price_id)
+      .eq('stripe_price_id', activeSubscription.stripe_price_id)
       .single()
 
     if (planError) {
@@ -146,8 +146,8 @@ export async function getUserData(): Promise<UserData> {
     const { data: credits, error: creditsError } = await supabase
       .from('user_credits')
       .select('*')
-      .eq('user_id', user.id)
-      .single()
+      .eq('auth_user_id', authUser.id)
+      .maybeSingle()
 
     if (creditsError) {
       throw new Error(`Error fetching credits: ${creditsError.message}`)
@@ -159,7 +159,7 @@ export async function getUserData(): Promise<UserData> {
   const { data: creditPurchases, error: creditPurchasesError } = await supabase
     .from('credit_purchases')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('auth_user_id', authUser.id)
     .eq('is_deleted', false)
     .order('created_at', { ascending: false })
 
@@ -171,7 +171,7 @@ export async function getUserData(): Promise<UserData> {
   const { data: usageLogs, error: usageLogsError } = await supabase
     .from('usage_logs')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('auth_user_id', authUser.id)
     .eq('is_deleted', false)
     .order('created_at', { ascending: false })
 
@@ -180,7 +180,7 @@ export async function getUserData(): Promise<UserData> {
   }
 
   let credits = {
-    totalCredits: 0,
+    availableCredits: 0,
     usedThisPeriod: 0,
     subscriptionRenewsAt: activeSubscription?.current_period_end || null
   }
@@ -192,7 +192,6 @@ export async function getUserData(): Promise<UserData> {
     // Step 2: Count how many subscription credits used this period
     const usedThisPeriod = usageLogs
       .filter(log =>
-        log.usage_type === 'subscription' &&
         new Date(log.created_at) >= currentPeriodStart
       )
       .reduce((sum, log) => sum + log.credits_used, 0)
@@ -205,7 +204,7 @@ export async function getUserData(): Promise<UserData> {
 
     // Step 5: Add up both
     credits = {
-      totalCredits: Math.max(0, subscriptionCreditsLeft) + purchasedCredits,
+      availableCredits: Math.max(0, subscriptionCreditsLeft) + purchasedCredits,
       usedThisPeriod,
       subscriptionRenewsAt: activeSubscription?.current_period_end || null
     }

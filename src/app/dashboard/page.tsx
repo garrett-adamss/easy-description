@@ -32,11 +32,11 @@ export default async function Page() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Credits Used:</span>
-                    <span className="font-medium">{userData.user?.credits_usage || 0}</span>
+                    <span className="font-medium">{userData.credits?.usedThisPeriod}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Monthly Credits:</span>
-                    <span className="font-medium">{userData.user?.monthly_credits || 0}</span>
+                    <span>Total Credits:</span>
+                    <span className="font-medium">{userData.credits?.availableCredits|| 0}</span>
                   </div>
                 </div>
               </CardContent>
@@ -45,7 +45,7 @@ export default async function Page() {
 
           {/* Usage Chart */}
           <div className="px-4 lg:px-6">
-            <ChartAreaInteractive />
+            <ChartAreaInteractive usageLogs={userData?.usageLogs || []} />
           </div>
 
           {/* Recent Usage Table */}

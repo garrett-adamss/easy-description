@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 
 type CSVProductOffer = {
-  stripe_product_id: string
+  stripe_price_id: string
   name: string
   description: string
   features: string
@@ -20,7 +20,7 @@ type CSVProductOffer = {
 
 export type PriceData = {
   id: string
-  stripe_product_id: string
+  stripe_price_id: string
   label: string
   price: number
   period: string
@@ -84,8 +84,8 @@ export function parseCSVData(csvContent: string): PriceData[] {
     }
     
     return {
-      id: csvRow.stripe_product_id,
-      stripe_product_id: csvRow.stripe_product_id,
+      id: csvRow.stripe_price_id,
+      stripe_price_id: csvRow.stripe_price_id,
       label: csvRow.label || csvRow.name,
       price: Number(csvRow.price),
       period: "month",

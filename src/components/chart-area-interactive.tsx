@@ -25,40 +25,54 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ChartAreaInteractive() {
-  const [data, setData] = React.useState([])
-  const [isLoading, setIsLoading] = React.useState(true)
+type UsageLog = {
+  id: string
+  description: string
+  credits_used: number
+  usage_type: string | null
+  created_at: string
+}
 
-  React.useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch('/api/usage/stats')
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.error('No usage data found')
-            setData([])
-            return
-          }
-          throw new Error(`HTTP error! status: ${response.status}`)
+type ChartAreaInteractiveProps = {
+  usageLogs: UsageLog[]
+}
+
+export function ChartAreaInteractive({ usageLogs }: ChartAreaInteractiveProps) {
+  const chartData = React.useMemo(() => {
+    // Group usage logs by date and sum credits
+    const groupedData = usageLogs.reduce((acc, log) => {
+      const date = new Date(log.created_at).toISOString().split('T')[0] // Get YYYY-MM-DD format
+      
+      if (!acc[date]) {
+        acc[date] = {
+          date,
+          credits: 0
         }
-        const json = await response.json()
-        setData(json)
-      } catch (error) {
-        console.error('Error fetching usage stats:', error)
-        setData([])
-      } finally {
-        setIsLoading(false)
       }
-    }
+      
+      acc[date].credits += log.credits_used
+      
+      return acc
+    }, {} as Record<string, { date: string; credits: number }>)
 
-    fetchData()
-  }, [])
+    // Convert to array and sort by date
+    return Object.values(groupedData).sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
+  }, [usageLogs])
 
-  if (isLoading) {
+  if (chartData.length === 0) {
     return (
-      <div className="flex h-[300px] items-center justify-center">
-        <div className="text-muted-foreground">Loading usage data...</div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Credit Usage Over Time</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex h-[300px] items-center justify-center">
+            <div className="text-muted-foreground">No usage data available</div>
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -70,7 +84,7 @@ export function ChartAreaInteractive() {
       <CardContent>
         <ChartContainer config={chartConfig}>
           <AreaChart
-            data={data}
+            data={chartData}
             margin={{
               left: 0,
               right: 10,

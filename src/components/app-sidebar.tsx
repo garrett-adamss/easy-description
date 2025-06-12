@@ -10,13 +10,13 @@ import {
   IconFileDescription,
   IconFileWord,
   IconFolder,
-  IconHelp,
   IconInnerShadowTop,
   IconListDetails,
   IconReport,
-  IconSearch,
   IconSettings,
   IconUsers,
+  IconAt,
+  IconCoins
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -33,6 +33,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { UserData } from "@/lib/user"
+// import { AtSign, CircleDollarSign } from "lucide-react"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: UserData
@@ -117,18 +118,18 @@ const navData = {
   navSecondary: [
     {
       title: "Settings",
-      url: "#",
+      url: "/dashboard/settings",
       icon: IconSettings,
     },
     {
-      title: "Need Help?",
-      url: "/help",
-      icon: IconHelp,
+      title: "Contact",
+      url: "/contact",
+      icon: IconAt,
     },
     {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
+      title: "Need more credits?",
+      url: "/credit-pricing",
+      icon: IconCoins,
     },
   ],
   documents: [

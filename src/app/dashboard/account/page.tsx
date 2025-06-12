@@ -11,6 +11,8 @@ export default async function AccountPage() {
     throw new Error('No user data found')
   }
 
+  console.log('User data HERE:', userData)
+
   // Format date strings for better readability
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A'
@@ -68,7 +70,7 @@ export default async function AccountPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Plan</span>
-                <span className="text-sm">{userData.subscriptionPlan?.id || 'No Plan'}</span>
+                <span className="text-sm">{userData.subscriptionPlan?.name || 'No Plan'}</span>
               </div>
               {userData.activeSubscription && (
                 <>
@@ -103,11 +105,11 @@ export default async function AccountPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Credits Used</span>
                   <span className="text-sm">
-                    {userData.user?.credits_usage} / {userData.user?.monthly_credits}
+                    {userData.credits?.usedThisPeriod} / {userData.subscriptionPlan?.credits}
                   </span>
                 </div>
                 <Progress 
-                  value={(userData.user?.credits_usage || 0) / (userData.user?.monthly_credits || 1) * 100} 
+                  value={(userData.credits?.usedThisPeriod || 0) / (userData.subscriptionPlan?.credits || 1) * 100} 
                   className="h-2" 
                 />
               </div>
@@ -116,15 +118,15 @@ export default async function AccountPage() {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-lg border p-3">
                   <div className="text-xs font-medium text-muted-foreground">Available Credits</div>
-                  <div className="mt-1 text-2xl font-bold">{(userData.user?.monthly_credits || 0) - (userData.user?.credits_usage || 0)}</div>
+                  <div className="mt-1 text-2xl font-bold">{(userData.credits?.availableCredits || 0)}</div>
                 </div>
                 <div className="rounded-lg border p-3">
                   <div className="text-xs font-medium text-muted-foreground">Monthly Credits</div>
-                  <div className="mt-1 text-2xl font-bold">{userData.user?.monthly_credits}</div>
+                  <div className="mt-1 text-2xl font-bold">{userData.subscriptionPlan?.credits}</div>
                 </div>
                 <div className="rounded-lg border p-3">
                   <div className="text-xs font-medium text-muted-foreground">Last Reset</div>
-                  <div className="mt-1 text-lg font-bold">{formatDate(userData.user?.last_credit_reset || null)}</div>
+                  <div className="mt-1 text-lg font-bold">{formatDate(userData.credits?.subscriptionRenewsAt || null)}</div>
                 </div>
                 <div className="rounded-lg border p-3">
                   <div className="text-xs font-medium text-muted-foreground">Account Status</div>

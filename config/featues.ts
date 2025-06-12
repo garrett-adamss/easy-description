@@ -1,1 +1,1 @@
-export const USE_SUPABASE_FOR_PRICING = false;
+export const USE_SUPABASE_FOR_PRICING = true;

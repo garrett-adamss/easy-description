@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
 interface PricingCardProps {
-  stripe_product_id: string
+  stripe_price_id: string
   label: string
   price: number
   period: string
@@ -18,7 +18,7 @@ interface PricingCardProps {
 }
 
 export function PricingCard({
-  stripe_product_id,
+  stripe_price_id,
   label,
   price,
   period,
@@ -30,7 +30,7 @@ export function PricingCard({
 }: PricingCardProps) {
   return (
     <Card
-      key={stripe_product_id}
+      key={stripe_price_id}
       className={`flex flex-col h-full relative overflow-hidden cursor-pointer group transition-all duration-300 hover:scale-105 ${popular ? "border-primary shadow-lg" : ""
         }`}
       onMouseMove={(e) => {
@@ -41,7 +41,7 @@ export function PricingCard({
         e.currentTarget.style.setProperty("--x", `${x}px`)
         e.currentTarget.style.setProperty("--y", `${y}px`)
       }}
-      onClick={() => onClick(stripe_product_id)}
+      onClick={() => onClick(stripe_price_id)}
     >
       <div
         className="absolute pointer-events-none inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"

@@ -6,7 +6,7 @@ import { loadCreditPricingFromCSV, type PriceData } from "@/lib/utils/csv-parser
 
 // Define the type for product offers from the database
 type ProductOffer = {
-  stripe_product_id: string
+  stripe_price_id: string
   name: string
   description: string | null
   features: Record<string, string> | null
@@ -58,8 +58,8 @@ export default async function PricingPage() {
     }
 
     return {
-      id: offer.stripe_product_id,
-      stripe_product_id: offer.stripe_product_id,
+      id: offer.stripe_price_id,
+      stripe_price_id: offer.stripe_price_id,
       label: offer.name,
       price: Number(offer.price),
       period: "month", // Default to month since it's not in your schema

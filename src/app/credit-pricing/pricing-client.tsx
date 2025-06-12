@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 type PriceData = {
   id: string
-  stripe_product_id: string
+  stripe_price_id: string
   label: string
   price: number
   period: string
@@ -49,7 +49,7 @@ export function PricingPageClient({ prices }: PricingPageClientProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ priceId, type: 'subscription' }),
+        body: JSON.stringify({ priceId, type: 'credit' }),
       })
 
       if (!res.ok) {
@@ -81,7 +81,7 @@ export function PricingPageClient({ prices }: PricingPageClientProps) {
       <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
         {prices.map((plan) => (
           <PricingCard
-            key={plan.stripe_product_id}
+            key={plan.stripe_price_id}
             {...plan}
             onClick={handleSubscribe}
           />

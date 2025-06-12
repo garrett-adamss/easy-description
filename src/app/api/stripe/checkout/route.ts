@@ -48,11 +48,11 @@ export async function POST(req: Request) {
     const { data: productOffer, error: productError } = await supabaseAdmin
       .from('product_offers')
       .select('*')
-      .eq('stripe_product_id', priceId)
+      .eq('stripe_price_id', priceId)
       .eq('plan_type', type)
       .eq('is_deleted', false)
       .single()
-
+    console.log('priceId', priceId)
     if (productError || !productOffer) {
       console.error('❌ Product not found:', productError)
       return NextResponse.json(
