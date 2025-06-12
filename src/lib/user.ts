@@ -48,14 +48,28 @@ export type UserData = {
     trial_end: string | null
     is_active: boolean
   } | null
-  subscriptionPlan: {
+  subscriptionPlan:{
     id: string
+    stripe_product_id: string
     name: string
     description: string | null
-    monthly_price: number | null
-    annual_price: number | null
-    monthly_credits: number
     features: Record<string, any>
+    button_text: string | null
+    popular: boolean | null
+    plan_type: string
+    price: number
+    annual_price: number | null
+    credits: number
+    is_deleted: boolean | null
+  } | null
+  creditDetails: {
+    user_id: string
+    purchase_credits: number
+  } | null
+  credits:{
+    totalCredits: number
+    usedThisPeriod: number
+    subscriptionRenewsAt: string
   } | null
   creditPurchases: Array<{
     id: string
@@ -116,15 +130,29 @@ export async function getUserData(): Promise<UserData> {
   let subscriptionPlan = null
   if (activeSubscription) {
     const { data: plan, error: planError } = await supabase
-      .from('subscription_plans')
+      .from('product_offers')
       .select('*')
-      .eq('id', activeSubscription.plan_id)
+      .eq('stripe_product_id', activeSubscription.stripe_price_id)
       .single()
 
     if (planError) {
       throw new Error(`Error fetching subscription plan: ${planError.message}`)
     }
     subscriptionPlan = plan
+  }
+
+  let creditDetails = null
+  if (user) {
+    const { data: credits, error: creditsError } = await supabase
+      .from('user_credits')
+      .select('*')
+      .eq('user_id', user.id)
+      .single()
+
+    if (creditsError) {
+      throw new Error(`Error fetching credits: ${creditsError.message}`)
+    }      
+    creditDetails = credits
   }
 
   // Get credit purchases
@@ -151,6 +179,38 @@ export async function getUserData(): Promise<UserData> {
     throw new Error(`Error fetching usage logs: ${usageLogsError.message}`)
   }
 
+  let credits = {
+    totalCredits: 0,
+    usedThisPeriod: 0,
+    subscriptionRenewsAt: activeSubscription?.current_period_end || null
+  }
+
+  if (user && subscriptionPlan) {
+    // Step 1: Get start of current period
+    const currentPeriodStart = new Date(activeSubscription.current_period_start)
+
+    // Step 2: Count how many subscription credits used this period
+    const usedThisPeriod = usageLogs
+      .filter(log =>
+        log.usage_type === 'subscription' &&
+        new Date(log.created_at) >= currentPeriodStart
+      )
+      .reduce((sum, log) => sum + log.credits_used, 0)
+
+    // Step 3: Calculate remaining subscription credits
+    const subscriptionCreditsLeft = subscriptionPlan.credits - usedThisPeriod
+
+    // Step 4: Get purchased credits from user_credits table
+    const purchasedCredits = creditDetails?.purchased_credits || 0
+
+    // Step 5: Add up both
+    credits = {
+      totalCredits: Math.max(0, subscriptionCreditsLeft) + purchasedCredits,
+      usedThisPeriod,
+      subscriptionRenewsAt: activeSubscription?.current_period_end || null
+    }
+  }
+
   // Format auth user data
   const formattedAuthUser = {
     id: authUser.id,
@@ -170,8 +230,10 @@ export async function getUserData(): Promise<UserData> {
     user,
     activeSubscription,
     subscriptionPlan,
+    creditDetails,
+    credits,
     creditPurchases,
     usageLogs,
     avatar: gravatarUrl
   }
-} 
+}

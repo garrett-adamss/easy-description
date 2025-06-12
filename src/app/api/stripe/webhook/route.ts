@@ -41,9 +41,9 @@ async function getUserDataWithAdmin(supabaseAdmin: any, supabaseUid: string) {
   let subscriptionPlan = null
   if (activeSubscription) {
     const { data: plan, error: planError } = await supabaseAdmin
-      .from('subscription_plans')
+      .from('product_offers')
       .select('*')
-      .eq('id', activeSubscription.plan_id)
+      .eq('stripe_product_id', activeSubscription.stripe_price_id)
       .single()
 
     if (planError) {
@@ -169,11 +169,12 @@ export async function POST(req: Request) {
           const priceId = subscription.items.data[0]?.price.id
           console.log('💰 Price ID:', priceId)
 
-          // Get the subscription plan details
+          // Get the subscription plan details from product_offers
           const { data: plan, error: planError } = await supabaseAdmin
-            .from('subscription_plans')
+            .from('product_offers')
             .select('*')
-            .eq('stripe_price_id', priceId)
+            .eq('stripe_product_id', priceId)
+            .eq('plan_type', 'subscription')
             .single()
 
           if (planError || !plan) {
@@ -204,7 +205,7 @@ export async function POST(req: Request) {
             user_id: user.id,
             auth_user_id: supabaseUid,
             stripe_subscription_id: subscription.id,
-            plan_id: plan.id,
+            stripe_price_id: priceId, // Updated to use stripe_price_id instead of plan_id
             status: subscription.status,
             cancel_at_period_end: subscription.cancel_at_period_end,
             current_period_start: periodStart ? new Date(periodStart * 1000).toISOString() : null,
@@ -220,22 +221,9 @@ export async function POST(req: Request) {
               .update(subscriptionData)
               .eq('id', existingSub.id)
 
-            const { error: userUpdateError } = await supabaseAdmin
-              .from('users')
-              .update({
-                monthly_credits: plan.monthly_credits,
-              })
-              .eq('id', user.id)
-
-            console.log('👤 User HERE HERE:', user)
-
             if (updateError) {
               console.error('❌ Failed to update subscription:', updateError)
               throw updateError
-            }
-            if (userUpdateError) {
-              console.error('❌ Failed to update user credits:', userUpdateError)
-              throw userUpdateError
             }
           } else {
             // Create new subscription
@@ -257,9 +245,6 @@ export async function POST(req: Request) {
                 active_subscription_id: newSub.id,
                 is_subscription_active: true,
                 is_on_grace_period: subscription.cancel_at_period_end,
-                monthly_credits: plan.monthly_credits,
-                // credits_remaining: plan.monthly_credits,
-                last_credit_reset: new Date().toISOString(),
               })
               .eq('id', user.id)
 
@@ -314,11 +299,12 @@ export async function POST(req: Request) {
             const priceId = subscription.items.data[0]?.price.id
             console.log('💰 Price ID:', priceId)
 
-            // Get the subscription plan details
+            // Get the subscription plan details from product_offers
             const { data: plan, error: planError } = await supabaseAdmin
-              .from('subscription_plans')
+              .from('product_offers')
               .select('*')
-              .eq('stripe_price_id', priceId)
+              .eq('stripe_product_id', priceId)
+              .eq('plan_type', 'subscription')
               .single()
 
             if (planError || !plan) {
@@ -336,7 +322,7 @@ export async function POST(req: Request) {
                 user_id: user.id,
                 auth_user_id: supabaseUid,
                 stripe_subscription_id: subscription.id,
-                plan_id: plan.id,
+                stripe_price_id: priceId, // Updated to use stripe_price_id instead of plan_id
                 status: subscription.status,
                 cancel_at_period_end: subscription.cancel_at_period_end,
                 current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
@@ -359,9 +345,6 @@ export async function POST(req: Request) {
                 active_subscription_id: newSub.id,
                 is_subscription_active: true,
                 is_on_grace_period: subscription.cancel_at_period_end,
-                monthly_credits: plan.monthly_credits,
-                // credits_remaining: plan.monthly_credits,
-                last_credit_reset: new Date().toISOString(),
               })
               .eq('id', user.id)
 
@@ -370,11 +353,24 @@ export async function POST(req: Request) {
               throw userUpdateError
             }
           } else if (type === 'credit') {
-            // Handle credit purchase
+            // Handle credit purchase - get the line items to find the price ID
+            const lineItems = await stripe.checkout.sessions.listLineItems(session.id)
+            const priceId = lineItems.data[0]?.price?.id
+
+            if (!priceId) {
+              console.error('❌ No price ID found in line items')
+              return NextResponse.json(
+                { error: 'No price ID found' },
+                { status: 400 }
+              )
+            }
+
+            // Get the credit plan details from product_offers
             const { data: creditPlan, error: creditPlanError } = await supabaseAdmin
-              .from('credit_plans')
+              .from('product_offers')
               .select('*')
-              .eq('stripe_price_id', session.line_items?.data[0]?.price?.id)
+              .eq('stripe_product_id', priceId)
+              .eq('plan_type', 'credit')
               .single()
 
             if (creditPlanError || !creditPlan) {
@@ -390,10 +386,11 @@ export async function POST(req: Request) {
               .from('credit_purchases')
               .insert({
                 user_id: user.id,
-                credit_plan_id: creditPlan.id,
+                stripe_price_id: priceId,
+                stripe_payment_intent_id: session.payment_intent,
                 credits_added: creditPlan.credits,
                 purchase_amount: creditPlan.price,
-                status: 'completed',
+                status: 'succeeded',
                 expires_at: null,
               })
 
@@ -402,18 +399,35 @@ export async function POST(req: Request) {
               throw creditPurchaseError
             }
 
-            // Update user's credits
-            // const { error: userUpdateError } = await supabaseAdmin
-            //   .from('users')
-            //   .update({
-            //     credits_remaining: user.credits_remaining + creditPlan.credits,
-            //   })
-            //   .eq('id', user.id)
+            // Update user_credits table - get current credits and add new ones
+            const { data: currentCredits, error: currentCreditsError } = await supabaseAdmin
+              .from('user_credits')
+              .select('purchased_credits')
+              .eq('user_id', user.id)
+              .single()
 
-            // if (userUpdateError) {
-            //   console.error('❌ Failed to update user credits:', userUpdateError)
-            //   throw userUpdateError
-            // }
+            let newPurchasedCredits = creditPlan.credits
+            if (!currentCreditsError && currentCredits) {
+              newPurchasedCredits = currentCredits.purchased_credits + creditPlan.credits
+            }
+
+            // Upsert user_credits
+            const { error: userCreditsError } = await supabaseAdmin
+              .from('user_credits')
+              .upsert({
+                user_id: user.id,
+                purchased_credits: newPurchasedCredits,
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'user_id'
+              })
+
+            if (userCreditsError) {
+              console.error('❌ Failed to update user credits:', userCreditsError)
+              throw userCreditsError
+            }
+
+            console.log(`✅ Added ${creditPlan.credits} credits to user ${user.id}`)
           }
 
           break
