@@ -155,6 +155,8 @@ export async function POST(req: Request) {
           userId: userData.user.id,
           productName: productOffer.name,
           credits: productOffer.credits.toString(),
+          priceId: priceId, // Add price ID to metadata
+          type: 'credit',
         }
       }
     }

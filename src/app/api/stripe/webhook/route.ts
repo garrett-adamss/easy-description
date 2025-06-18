@@ -125,6 +125,7 @@ export async function POST(req: Request) {
 
     // Process the event
     try {
+      console.log('📊 Event type:', event.type)
       switch (event.type) {
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
@@ -386,6 +387,7 @@ export async function POST(req: Request) {
               .from('credit_purchases')
               .insert({
                 user_id: user.id,
+                auth_user_id: supabaseUid,
                 stripe_price_id: priceId,
                 stripe_payment_intent_id: session.payment_intent,
                 credits_added: creditPlan.credits,
@@ -416,6 +418,7 @@ export async function POST(req: Request) {
               .from('user_credits')
               .upsert({
                 user_id: user.id,
+                auth_user_id: supabaseUid,
                 purchased_credits: newPurchasedCredits,
                 updated_at: new Date().toISOString()
               }, {
@@ -468,6 +471,144 @@ export async function POST(req: Request) {
             console.error('❌ Failed to update subscription:', updateError)
             throw updateError
           }
+
+          break
+        }
+
+        case 'payment_intent.succeeded': {
+          console.log('💳 Processing payment_intent.succeeded')
+          const paymentIntent = event.data.object as Stripe.PaymentIntent
+          const customerId = paymentIntent.customer as string
+          console.log('👤 Customer ID:', customerId)
+          console.log('💰 Payment Intent ID:', paymentIntent.id)
+
+          // Check if this is a credit purchase by looking at metadata
+          const metadata = paymentIntent.metadata
+          const supabaseUid = metadata.supabaseUid
+          const credits = metadata.credits
+
+          if (!supabaseUid) {
+            console.log('ℹ️ No Supabase UID in payment metadata, skipping')
+            break
+          }
+
+          if (!credits) {
+            console.log('ℹ️ No credits in payment metadata, not a credit purchase')
+            break
+          }
+
+          console.log('🔍 Credit purchase detected:', { supabaseUid, credits })
+
+          // Get user data using the admin helper
+          const { user } = await getUserDataWithAdmin(supabaseAdmin, supabaseUid)
+          console.log('✅ Found user:', user.id)
+
+          // Get the price ID and credit plan details
+          let priceId = metadata.priceId
+          let creditPlan = null
+
+          // If we have price ID in metadata, use it directly
+          if (priceId) {
+            const { data: plan, error: planError } = await supabaseAdmin
+              .from('product_offers')
+              .select('*')
+              .eq('stripe_price_id', priceId)
+              .eq('plan_type', 'credit')
+              .single()
+
+            if (!planError && plan) {
+              creditPlan = plan
+            }
+          }
+
+
+
+          // Last fallback: Try to find a matching credit plan by amount and credits
+          if (!creditPlan) {
+            const { data: possiblePlans, error: plansError } = await supabaseAdmin
+              .from('product_offers')
+              .select('*')
+              .eq('plan_type', 'credit')
+              .eq('credits', parseInt(credits))
+              .eq('price', paymentIntent.amount / 100) // Convert cents to dollars
+
+            if (!plansError && possiblePlans && possiblePlans.length > 0) {
+              creditPlan = possiblePlans[0]
+              priceId = creditPlan.stripe_price_id
+            }
+          }
+
+          if (!creditPlan) {
+            console.error('❌ Credit plan not found for payment intent:', paymentIntent.id)
+            return NextResponse.json(
+              { error: 'Credit plan not found' },
+              { status: 400 }
+            )
+          }
+
+          console.log('✅ Found credit plan:', creditPlan.name)
+
+          // Check if we already processed this payment intent
+          const { data: existingPurchase } = await supabaseAdmin
+            .from('credit_purchases')
+            .select('id')
+            .eq('stripe_payment_intent_id', paymentIntent.id)
+            .single()
+
+          if (existingPurchase) {
+            console.log('🔄 Payment intent already processed, skipping')
+            break
+          }
+
+          // Create credit purchase record
+          const { error: creditPurchaseError } = await supabaseAdmin
+            .from('credit_purchases')
+            .insert({
+              user_id: user.id,
+              auth_user_id: supabaseUid,
+              stripe_price_id: creditPlan.stripe_price_id,
+              stripe_payment_intent_id: paymentIntent.id,
+              credits_added: creditPlan.credits,
+              purchase_amount: creditPlan.price,
+              status: 'succeeded',
+              expires_at: null,
+            })
+
+          if (creditPurchaseError) {
+            console.error('❌ Failed to create credit purchase:', creditPurchaseError)
+            throw creditPurchaseError
+          }
+
+          // Update user_credits table - get current credits and add new ones
+          const { data: currentCredits, error: currentCreditsError } = await supabaseAdmin
+            .from('user_credits')
+            .select('purchased_credits')
+            .eq('user_id', user.id)
+            .single()
+
+          let newPurchasedCredits = creditPlan.credits
+          if (!currentCreditsError && currentCredits) {
+            newPurchasedCredits = currentCredits.purchased_credits + creditPlan.credits
+          }
+
+          // Upsert user_credits
+          const { error: userCreditsError } = await supabaseAdmin
+            .from('user_credits')
+            .upsert({
+              user_id: user.id,
+              auth_user_id: supabaseUid,
+              purchased_credits: newPurchasedCredits,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id'
+            })
+
+          if (userCreditsError) {
+            console.error('❌ Failed to update user credits:', userCreditsError)
+            throw userCreditsError
+          }
+
+          console.log(`✅ Added ${creditPlan.credits} credits to user ${user.id} via payment_intent.succeeded`)
 
           break
         }

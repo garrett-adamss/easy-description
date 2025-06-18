@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { User } from '@supabase/supabase-js'
 import { PricingCard } from "@/components/pricing-card"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Info } from "lucide-react"
 
 type PriceData = {
   id: string
@@ -91,14 +92,14 @@ export function PricingPageClient({ prices }: PricingPageClientProps) {
       <div className="mt-16 text-center">
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
-            <CardTitle className="text-2xl font-semibold">Need more credits?</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              You can purchase additional credits in bulk to extend your usage.
+            <CardTitle className="text-2xl font-semibold flex justify-center items-center"> <Info className="mr-2 h-6 w-6"/> Important Notice</CardTitle>
+            <CardDescription className="text-white">
+              An active subscription is required to use and purchase additional credits.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Please note that a valid subscription is required to buy additional credits.
+              Your credits will be automatically added to your account upon purchase.
             </p>
           </CardContent>
         </Card>

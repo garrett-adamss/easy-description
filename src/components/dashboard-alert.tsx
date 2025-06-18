@@ -51,6 +51,7 @@ export function DashboardAlert({ user }: DashboardAlertProps) {
         <AlertDescription className="flex items-center justify-between pt-2">
           <span className="text-md">Navigate to your dashboard to manage your account</span>
           <Button
+            className="hover:cursor-pointer"
             variant="default"
             size="sm"
             onClick={() => router.push("/dashboard")}

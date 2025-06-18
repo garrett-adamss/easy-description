@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { PricingPageClient } from "./pricing-client"
-import { USE_SUPABASE_FOR_PRICING } from "../../../config/featues"
+import { USE_SUPABASE_FOR_PRICING } from "@/config/features"
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { loadCreditPricingFromCSV, type PriceData } from "@/lib/utils/csv-parser"
 
