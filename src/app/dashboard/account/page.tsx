@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { getUserData } from "@/lib/user"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export default async function AccountPage() {
   const userData = await getUserData()
@@ -57,13 +59,12 @@ export default async function AccountPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Status</span>
-                <Badge 
-                  variant="outline" 
-                  className={`${
-                    userData.user?.is_subscription_active 
-                      ? 'bg-green-50 text-green-700 hover:bg-green-50 hover:text-green-700'
-                      : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-50 hover:text-yellow-700'
-                  }`}
+                <Badge
+                  variant="outline"
+                  className={`${userData.user?.is_subscription_active
+                    ? 'bg-green-50 text-green-700 hover:bg-green-50 hover:text-green-700'
+                    : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-50 hover:text-yellow-700'
+                    }`}
                 >
                   {userData.user?.is_subscription_active ? 'Active' : 'Inactive'}
                 </Badge>
@@ -108,9 +109,9 @@ export default async function AccountPage() {
                     {userData.credits?.usedThisPeriod} / {userData.subscriptionPlan?.credits}
                   </span>
                 </div>
-                <Progress 
-                  value={(userData.credits?.usedThisPeriod || 0) / (userData.subscriptionPlan?.credits || 1) * 100} 
-                  className="h-2" 
+                <Progress
+                  value={(userData.credits?.usedThisPeriod || 0) / (userData.subscriptionPlan?.credits || 1) * 100}
+                  className="h-2"
                 />
               </div>
 
@@ -129,11 +130,19 @@ export default async function AccountPage() {
                   <div className="mt-1 text-lg font-bold">{formatDate(userData.credits?.subscriptionRenewsAt || null)}</div>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <div className="text-xs font-medium text-muted-foreground">Account Status</div>
+                  <div className="text-xs font-medium text-muted-foreground">Need more Credits?</div>
+
                   <div className="mt-1 text-lg font-bold">
-                    <Badge variant={userData.user?.is_user_active ? "default" : "destructive"}>
-                      {userData.user?.is_user_active ? "Active" : "Inactive"}
-                    </Badge>
+                    {/* <Link href="/credit-pricing">
+                      <Badge className="default">
+                        Buy Credits
+                      </Badge>
+                    </Link> */}
+                    <Button asChild>
+                      <Link href="/credit-pricing">
+                        Buy Credits
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               </div>

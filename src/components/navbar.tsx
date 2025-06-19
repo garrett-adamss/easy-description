@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Package } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { AuthButtons } from "./auth-buttons"
 import { DashboardAlert } from "./dashboard-alert"
@@ -14,7 +14,7 @@ export default async function Navbar() {
         <div className="container flex h-16 items-center justify-between px-4 md:px-6 w-full">
           <div className="flex items-center gap-2 font-bold">
             <Link href="/" className="flex items-center gap-2">
-              <Package className="h-6 w-6" />
+              <Sparkles className="h-5 w-5" />
               <span>SaaS Starter</span>
             </Link>
           </div>

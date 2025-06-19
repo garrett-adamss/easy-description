@@ -10,7 +10,6 @@ import {
   IconFileDescription,
   IconFileWord,
   IconFolder,
-  IconInnerShadowTop,
   IconListDetails,
   IconReport,
   IconSettings,
@@ -33,6 +32,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { UserData } from "@/lib/user"
+import { Sparkles } from "lucide-react"
+import Link from "next/link"
 // import { AtSign, CircleDollarSign } from "lucide-react"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -161,10 +162,11 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
-              </a>
+              <Link href="/">
+                <Sparkles className="h-5 w-5" />
+                {/* <IconInnerShadowTop className="!size-5" /> */}
+                <span className="text-base font-semibold">Saas Starter</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

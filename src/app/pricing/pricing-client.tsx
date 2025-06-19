@@ -98,7 +98,7 @@ export function PricingPageClient({ prices }: PricingPageClientProps) {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Please note that a valid subscription is required to buy additional credits.
+              Please note that a valid subscription is required to buy and use additional credits.
             </p>
           </CardContent>
         </Card>

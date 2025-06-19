@@ -31,11 +31,11 @@ export default async function Page() {
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Credits Used:</span>
+                    <span>Credits Used This Period:</span>
                     <span className="font-medium">{userData.credits?.usedThisPeriod}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Total Credits:</span>
+                    <span>Total Credits Available:</span>
                     <span className="font-medium">{userData.credits?.availableCredits|| 0}</span>
                   </div>
                 </div>

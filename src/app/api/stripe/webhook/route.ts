@@ -33,7 +33,7 @@ async function getUserDataWithAdmin(supabaseAdmin: any, supabaseUid: string) {
     if (subscriptionError && subscriptionError.code !== 'PGRST116') {
       throw new Error(`Error fetching subscription: ${subscriptionError.message}`)
     }
-    
+
     activeSubscription = subscription
   }
 
@@ -131,9 +131,11 @@ export async function POST(req: Request) {
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted': {
           console.log(`🔄 Processing ${event.type}`)
-          const subscription = event.data.object as Stripe.Subscription
+          const partialSubscription = event.data.object as Stripe.Subscription
+          const subscription = await stripe.subscriptions.retrieve(partialSubscription.id)
           const customerId = subscription.customer as string
           console.log('👤 Customer ID:', customerId)
+          console.log('subscription:', subscription)
           console.log('📊 Subscription status:', subscription.status)
 
           // Get the customer to find the Supabase UID
@@ -193,27 +195,22 @@ export async function POST(req: Request) {
             .eq('stripe_subscription_id', subscription.id)
             .single()
 
-          // Safely handle date conversions
-          const periodStart = (subscription as any).current_period_start
-          const periodEnd = (subscription as any).current_period_end
-          const trialEnd = subscription.trial_end
-
-          console.log('📅 Period start:', periodStart ? new Date(periodStart * 1000).toISOString() : null)
-          console.log('📅 Period end:', periodEnd ? new Date(periodEnd * 1000).toISOString() : null)
-          console.log('📅 Trial end:', trialEnd ? new Date(trialEnd * 1000).toISOString() : null )
+          console.log('📅 Current period start:', new Date(subscription.billing_cycle_anchor * 1000).toISOString())
 
           const subscriptionData = {
             user_id: user.id,
             auth_user_id: supabaseUid,
             stripe_subscription_id: subscription.id,
-            stripe_price_id: priceId, // Updated to use stripe_price_id instead of plan_id
+            stripe_price_id: priceId,
             status: subscription.status,
             cancel_at_period_end: subscription.cancel_at_period_end,
-            current_period_start: periodStart ? new Date(periodStart * 1000).toISOString() : null,
-            current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-            trial_end: trialEnd ? new Date(trialEnd * 1000).toISOString() : null,
+            current_period_start: new Date(subscription.billing_cycle_anchor * 1000).toISOString(),
+            current_period_end: null,
+            trial_end: null,
             is_active: ['active', 'trialing'].includes(subscription.status),
           }
+
+          let subscriptionId: string
 
           if (existingSub) {
             // Update existing subscription
@@ -226,6 +223,8 @@ export async function POST(req: Request) {
               console.error('❌ Failed to update subscription:', updateError)
               throw updateError
             }
+
+            subscriptionId = existingSub.id
           } else {
             // Create new subscription
             const { data: newSub, error: createError } = await supabaseAdmin
@@ -239,20 +238,24 @@ export async function POST(req: Request) {
               throw createError
             }
 
-            // Update user's active subscription
-            const { error: userUpdateError } = await supabaseAdmin
-              .from('users')
-              .update({
-                active_subscription_id: newSub.id,
-                is_subscription_active: true,
-                is_on_grace_period: subscription.cancel_at_period_end,
-              })
-              .eq('id', user.id)
+            subscriptionId = newSub.id
+          }
 
-            if (userUpdateError) {
-              console.error('❌ Failed to update user:', userUpdateError)
-              throw userUpdateError
-            }
+          //Update user subscription state after subscription is created or updated
+          const isCanceled = subscription.status === 'canceled'
+
+          const { error: userUpdateError } = await supabaseAdmin
+            .from('users')
+            .update({
+              active_subscription_id: isCanceled ? null : subscriptionId,
+              is_subscription_active: !isCanceled && ['active', 'trialing'].includes(subscription.status),
+              is_on_grace_period: subscription.cancel_at_period_end || false,
+            })
+            .eq('id', user.id)
+
+          if (userUpdateError) {
+            console.error('❌ Failed to update user subscription flags:', userUpdateError)
+            throw userUpdateError
           }
 
           break
@@ -326,9 +329,9 @@ export async function POST(req: Request) {
                 stripe_price_id: priceId, // Updated to use stripe_price_id instead of plan_id
                 status: subscription.status,
                 cancel_at_period_end: subscription.cancel_at_period_end,
-                current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-                current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
-                trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+                current_period_start: new Date(subscription.billing_cycle_anchor * 1000).toISOString(),
+                current_period_end: null,
+                trial_end: null,
                 is_active: true,
               })
               .select()
@@ -475,143 +478,143 @@ export async function POST(req: Request) {
           break
         }
 
-        case 'payment_intent.succeeded': {
-          console.log('💳 Processing payment_intent.succeeded')
-          const paymentIntent = event.data.object as Stripe.PaymentIntent
-          const customerId = paymentIntent.customer as string
-          console.log('👤 Customer ID:', customerId)
-          console.log('💰 Payment Intent ID:', paymentIntent.id)
+        // case 'payment_intent.succeeded': {
+        //   console.log('💳 Processing payment_intent.succeeded')
+        //   const paymentIntent = event.data.object as Stripe.PaymentIntent
+        //   const customerId = paymentIntent.customer as string
+        //   console.log('👤 Customer ID:', customerId)
+        //   console.log('💰 Payment Intent ID:', paymentIntent.id)
 
-          // Check if this is a credit purchase by looking at metadata
-          const metadata = paymentIntent.metadata
-          const supabaseUid = metadata.supabaseUid
-          const credits = metadata.credits
+        //   // Check if this is a credit purchase by looking at metadata
+        //   const metadata = paymentIntent.metadata
+        //   const supabaseUid = metadata.supabaseUid
+        //   const credits = metadata.credits
 
-          if (!supabaseUid) {
-            console.log('ℹ️ No Supabase UID in payment metadata, skipping')
-            break
-          }
+        //   if (!supabaseUid) {
+        //     console.log('ℹ️ No Supabase UID in payment metadata, skipping')
+        //     break
+        //   }
 
-          if (!credits) {
-            console.log('ℹ️ No credits in payment metadata, not a credit purchase')
-            break
-          }
+        //   if (!credits) {
+        //     console.log('ℹ️ No credits in payment metadata, not a credit purchase')
+        //     break
+        //   }
 
-          console.log('🔍 Credit purchase detected:', { supabaseUid, credits })
+        //   console.log('🔍 Credit purchase detected:', { supabaseUid, credits })
 
-          // Get user data using the admin helper
-          const { user } = await getUserDataWithAdmin(supabaseAdmin, supabaseUid)
-          console.log('✅ Found user:', user.id)
+        //   // Get user data using the admin helper
+        //   const { user } = await getUserDataWithAdmin(supabaseAdmin, supabaseUid)
+        //   console.log('✅ Found user:', user.id)
 
-          // Get the price ID and credit plan details
-          let priceId = metadata.priceId
-          let creditPlan = null
+        //   // Get the price ID and credit plan details
+        //   let priceId = metadata.priceId
+        //   let creditPlan = null
 
-          // If we have price ID in metadata, use it directly
-          if (priceId) {
-            const { data: plan, error: planError } = await supabaseAdmin
-              .from('product_offers')
-              .select('*')
-              .eq('stripe_price_id', priceId)
-              .eq('plan_type', 'credit')
-              .single()
+        //   // If we have price ID in metadata, use it directly
+        //   if (priceId) {
+        //     const { data: plan, error: planError } = await supabaseAdmin
+        //       .from('product_offers')
+        //       .select('*')
+        //       .eq('stripe_price_id', priceId)
+        //       .eq('plan_type', 'credit')
+        //       .single()
 
-            if (!planError && plan) {
-              creditPlan = plan
-            }
-          }
+        //     if (!planError && plan) {
+        //       creditPlan = plan
+        //     }
+        //   }
 
 
 
-          // Last fallback: Try to find a matching credit plan by amount and credits
-          if (!creditPlan) {
-            const { data: possiblePlans, error: plansError } = await supabaseAdmin
-              .from('product_offers')
-              .select('*')
-              .eq('plan_type', 'credit')
-              .eq('credits', parseInt(credits))
-              .eq('price', paymentIntent.amount / 100) // Convert cents to dollars
+        //   // Last fallback: Try to find a matching credit plan by amount and credits
+        //   if (!creditPlan) {
+        //     const { data: possiblePlans, error: plansError } = await supabaseAdmin
+        //       .from('product_offers')
+        //       .select('*')
+        //       .eq('plan_type', 'credit')
+        //       .eq('credits', parseInt(credits))
+        //       .eq('price', paymentIntent.amount / 100) // Convert cents to dollars
 
-            if (!plansError && possiblePlans && possiblePlans.length > 0) {
-              creditPlan = possiblePlans[0]
-              priceId = creditPlan.stripe_price_id
-            }
-          }
+        //     if (!plansError && possiblePlans && possiblePlans.length > 0) {
+        //       creditPlan = possiblePlans[0]
+        //       priceId = creditPlan.stripe_price_id
+        //     }
+        //   }
 
-          if (!creditPlan) {
-            console.error('❌ Credit plan not found for payment intent:', paymentIntent.id)
-            return NextResponse.json(
-              { error: 'Credit plan not found' },
-              { status: 400 }
-            )
-          }
+        //   if (!creditPlan) {
+        //     console.error('❌ Credit plan not found for payment intent:', paymentIntent.id)
+        //     return NextResponse.json(
+        //       { error: 'Credit plan not found' },
+        //       { status: 400 }
+        //     )
+        //   }
 
-          console.log('✅ Found credit plan:', creditPlan.name)
+        //   console.log('✅ Found credit plan:', creditPlan.name)
 
-          // Check if we already processed this payment intent
-          const { data: existingPurchase } = await supabaseAdmin
-            .from('credit_purchases')
-            .select('id')
-            .eq('stripe_payment_intent_id', paymentIntent.id)
-            .single()
+        //   // Check if we already processed this payment intent
+        //   const { data: existingPurchase } = await supabaseAdmin
+        //     .from('credit_purchases')
+        //     .select('id')
+        //     .eq('stripe_payment_intent_id', paymentIntent.id)
+        //     .single()
 
-          if (existingPurchase) {
-            console.log('🔄 Payment intent already processed, skipping')
-            break
-          }
+        //   if (existingPurchase) {
+        //     console.log('🔄 Payment intent already processed, skipping')
+        //     break
+        //   }
 
-          // Create credit purchase record
-          const { error: creditPurchaseError } = await supabaseAdmin
-            .from('credit_purchases')
-            .insert({
-              user_id: user.id,
-              auth_user_id: supabaseUid,
-              stripe_price_id: creditPlan.stripe_price_id,
-              stripe_payment_intent_id: paymentIntent.id,
-              credits_added: creditPlan.credits,
-              purchase_amount: creditPlan.price,
-              status: 'succeeded',
-              expires_at: null,
-            })
+        //   // Create credit purchase record
+        //   const { error: creditPurchaseError } = await supabaseAdmin
+        //     .from('credit_purchases')
+        //     .insert({
+        //       user_id: user.id,
+        //       auth_user_id: supabaseUid,
+        //       stripe_price_id: creditPlan.stripe_price_id,
+        //       stripe_payment_intent_id: paymentIntent.id,
+        //       credits_added: creditPlan.credits,
+        //       purchase_amount: creditPlan.price,
+        //       status: 'succeeded',
+        //       expires_at: null,
+        //     })
 
-          if (creditPurchaseError) {
-            console.error('❌ Failed to create credit purchase:', creditPurchaseError)
-            throw creditPurchaseError
-          }
+        //   if (creditPurchaseError) {
+        //     console.error('❌ Failed to create credit purchase:', creditPurchaseError)
+        //     throw creditPurchaseError
+        //   }
 
-          // Update user_credits table - get current credits and add new ones
-          const { data: currentCredits, error: currentCreditsError } = await supabaseAdmin
-            .from('user_credits')
-            .select('purchased_credits')
-            .eq('user_id', user.id)
-            .single()
+        //   // Update user_credits table - get current credits and add new ones
+        //   const { data: currentCredits, error: currentCreditsError } = await supabaseAdmin
+        //     .from('user_credits')
+        //     .select('purchased_credits')
+        //     .eq('user_id', user.id)
+        //     .single()
 
-          let newPurchasedCredits = creditPlan.credits
-          if (!currentCreditsError && currentCredits) {
-            newPurchasedCredits = currentCredits.purchased_credits + creditPlan.credits
-          }
+        //   let newPurchasedCredits = creditPlan.credits
+        //   if (!currentCreditsError && currentCredits) {
+        //     newPurchasedCredits = currentCredits.purchased_credits + creditPlan.credits
+        //   }
 
-          // Upsert user_credits
-          const { error: userCreditsError } = await supabaseAdmin
-            .from('user_credits')
-            .upsert({
-              user_id: user.id,
-              auth_user_id: supabaseUid,
-              purchased_credits: newPurchasedCredits,
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'user_id'
-            })
+        //   // Upsert user_credits
+        //   const { error: userCreditsError } = await supabaseAdmin
+        //     .from('user_credits')
+        //     .upsert({
+        //       user_id: user.id,
+        //       auth_user_id: supabaseUid,
+        //       purchased_credits: newPurchasedCredits,
+        //       updated_at: new Date().toISOString()
+        //     }, {
+        //       onConflict: 'user_id'
+        //     })
 
-          if (userCreditsError) {
-            console.error('❌ Failed to update user credits:', userCreditsError)
-            throw userCreditsError
-          }
+        //   if (userCreditsError) {
+        //     console.error('❌ Failed to update user credits:', userCreditsError)
+        //     throw userCreditsError
+        //   }
 
-          console.log(`✅ Added ${creditPlan.credits} credits to user ${user.id} via payment_intent.succeeded`)
+        //   console.log(`✅ Added ${creditPlan.credits} credits to user ${user.id} via payment_intent.succeeded`)
 
-          break
-        }
+        //   break
+        // }
       }
 
       // Mark the event as processed
