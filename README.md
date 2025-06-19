@@ -41,81 +41,86 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 
 ## Setting Up DB
-🛠️ Step-by-Step Guide: Connect PROJECT to project_db
-🔁 1. Clone the TEMPLATE repo
-bash
-Copy
-Edit
-git clone https://github.com/your-username/TEMPLATE.git PROJECT
-cd PROJECT
-🧪 2. Create a new Supabase project
-Go to https://supabase.com
+🧪 1. Create a new Supabase project
+- Go to https://supabase.com
+- Click New Project
+- Name it new project
+- Set a secure database password
 
-Click New Project
-
-Name it project_db or whatever you want
-
-Set a secure database password
-
-Wait for the project to provision
-
-🧾 3. Get your Project Ref
-In the Supabase Dashboard, open your project_db
+🧾 2. Get your Project Ref
+In the Supabase Dashboard, open your new project
 
 Look at the URL in your browser:
-
-ruby
-Copy
-Edit
+```ruby
 https://supabase.com/dashboard/project/**abcd1234xyz**
+```
 Copy the bold part → that’s your project-ref.
 
-🔐 4. Add your Supabase credentials to .env
-In the PROJECT repo, create a file:
-
-bash
-Copy
-Edit
-touch .env
-And fill it with:
-
-env
-Copy
-Edit
+🔐 3. Add your Supabase credentials to .env.local
+```env
 SUPABASE_URL=https://<your-project-ref>.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
 You can find these in your Supabase dashboard under
 Settings → API → Project API keys
 
-📦 5. Install the Supabase CLI
-If you haven’t already:
-
-bash
-Copy
-Edit
-npm install -g supabase
-🔗 6. Link your project with Supabase
-bash
-Copy
-Edit
-supabase link --project-ref abcd1234xyz
+🔗 4. Link your project with Supabase
+```bash
+npx supabase@latest link --project-ref abcd1234xyz
+```
 Replace abcd1234xyz with your actual project ref from Step 3.
 
 This creates a supabase/config.toml file that links your local project to your remote Supabase database.
 
-⬆️ 7. Push your schema
-bash
-Copy
-Edit
+⬆️ 5. Push your schema
+```bash
 supabase db push --file supabase/schema_init.sql
+```
 This sends your full database schema (tables, functions, RLS, etc.) to your new project_db.
 
-✅ 8. Confirm it worked
-Go to your Supabase Dashboard:
+✅ 6. Confirm it worked
+- Go to your Supabase Dashboard:
+- Check the Table Editor → your tables should be there
+- Check SQL Editor → Triggers / Policies → your logic should be there
+- Check Authentication → Policies if you added RLS
 
-Check the Table Editor → your tables should be there
 
-Check SQL Editor → Triggers / Policies → your logic should be there
+## Cloning template 
 
-Check Authentication → Policies if you added RLS
+##### 1. Clone your template repository into a new project folder
+```bash
+git clone https://github.com/garrett-adamss/saas-vercel-supabase.git easy-description
+```
+##### 2. Move into the new project directory
+```bash
+cd easy-description
+```
+##### 3. Rename the original remote (your template) to `template`
+```bash
+git remote rename origin template
+```
+##### 4. Create a new GitHub repo for your SaaS project (e.g., https://github.com/garrett-adamss/easy-description.git)
+##### Then link your SaaS project to that new GitHub repo
+```bash
+git remote add origin https://github.com/garrett-adamss/easy-description.git
+```
+
+##### 5. Push your code to your new SaaS repo
+```bash
+git push -u origin main
+```
+
+🔁 Later, to pull in updates from your template:
+```bash
+# Fetch the latest changes from the template repo
+git fetch template
+
+# Merge changes from the template's main branch into your project
+git merge template/main
+```
+
+Or to pull in just one folder/module (e.g., updated auth module):
+```bash
+git checkout template/main -- modules/auth
+```
