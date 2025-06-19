@@ -100,12 +100,12 @@ cd easy-description
 ```bash
 git remote rename origin template
 ```
-##### 4. Create a new GitHub repo for your SaaS project (e.g., https://github.com/garrett-adamss/easy-description.git)
-##### Then link your SaaS project to that new GitHub repo
+##### 4. Create a new GitHub repo for your SaaS project
+Go to https://github.com/new, name it easy-description, and do not initialize it with a README or license.
+Then link your SaaS project to that new GitHub repo
 ```bash
-git remote add origin https://github.com/garrett-adamss/easy-description.git
+    git remote add origin https://github.com/garrett-adamss/easy-description.git
 ```
-
 ##### 5. Push your code to your new SaaS repo
 ```bash
 git push -u origin main
